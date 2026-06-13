@@ -409,6 +409,11 @@
       filter: drop-shadow(0 0 6px rgba(79, 195, 247, 0.25));
     }
 
+    .leg-link.tertiary {
+      stroke: var(--warning);
+      filter: drop-shadow(0 0 6px rgba(245, 166, 35, 0.25));
+    }
+
     .leg-joint-dot {
       fill: #d8f8ff;
       stroke: #0a1219;
@@ -590,8 +595,10 @@
                 <line id="leg-axis-y" class="leg-graph-axis" x1="180" y1="-20" x2="180" y2="480" />
                 <path id="leg-link-a" class="leg-link" d="" />
                 <path id="leg-link-b" class="leg-link secondary" d="" />
+                <path id="leg-link-c" class="leg-link tertiary" d="" />
                 <circle id="leg-base-dot" class="leg-joint-dot" cx="180" cy="220" r="7" />
                 <circle id="leg-knee-dot" class="leg-joint-dot" cx="0" cy="0" r="8" />
+                <circle id="leg-ankle-dot" class="leg-joint-dot" cx="0" cy="0" r="6" />
                 <circle id="leg-effector-dot" class="leg-effector" cx="0" cy="0" r="10" />
               </svg>
             </div>
@@ -714,16 +721,19 @@
     const legMoverReset = document.getElementById('leg-mover-reset');
     const legLinkA = document.getElementById('leg-link-a');
     const legLinkB = document.getElementById('leg-link-b');
+    const legLinkC = document.getElementById('leg-link-c');
     const legKneeDot = document.getElementById('leg-knee-dot');
+    const legAnkleDot = document.getElementById('leg-ankle-dot');
     const legEffectorDot = document.getElementById('leg-effector-dot');
     const legBaseDot = document.getElementById('leg-base-dot');
 
     const legMover = {
       base: { x: 180, y: 220 },
       linkA: 95,
-      linkB: 120,
+      linkB: 74.5,
+      linkC: 95,
       knee: { x: 275, y: 220 },
-      target: { x: 395, y: 220 },
+      target: { x: 349.5, y: 315 },
       baseLocked: false,
       lockedFemurRad: null,
       kneeLocked: false,
@@ -864,10 +874,7 @@
             x: legMover.base.x + Math.cos(femurRad) * legMover.linkA,
             y: legMover.base.y + Math.sin(femurRad) * legMover.linkA
           };
-      const target = {
-        x: knee.x + Math.cos(lowerRad) * legMover.linkB,
-        y: knee.y + Math.sin(lowerRad) * legMover.linkB
-      };
+      const target = targetFromKneeAndTibia(knee, lowerRad);
 
       legMover.knee = knee;
       legMover.target = target;
@@ -1026,8 +1033,9 @@
       const dx = point.x - legMover.base.x;
       const dy = point.y - legMover.base.y;
       const distance = Math.hypot(dx, dy);
-      const maxReach = legMover.linkA + legMover.linkB;
-      const minReach = Math.abs(legMover.linkA - legMover.linkB) + 1;
+      const lowerReach = getLowerAssemblyReach();
+      const maxReach = legMover.linkA + lowerReach;
+      const minReach = Math.abs(legMover.linkA - lowerReach) + 1;
       if (distance < 0.001) {
         return {
           x: legMover.base.x,
@@ -1059,7 +1067,7 @@
     }
 
     function getTibiaRadians(knee, target) {
-      return Math.atan2(target.y - knee.y, target.x - knee.x);
+      return Math.atan2(target.y - knee.y, target.x - knee.x) - getLowerAssemblyOffsetRad();
     }
 
     function getFemurRadians(knee) {
@@ -1074,10 +1082,26 @@
     }
 
     function targetFromKneeAndTibia(knee, tibiaRad) {
+      const ankle = ankleFromKneeAndTibia(knee, tibiaRad);
+      return {
+        x: ankle.x + Math.cos(tibiaRad + Math.PI / 2) * legMover.linkC,
+        y: ankle.y + Math.sin(tibiaRad + Math.PI / 2) * legMover.linkC
+      };
+    }
+
+    function ankleFromKneeAndTibia(knee, tibiaRad) {
       return {
         x: knee.x + Math.cos(tibiaRad) * legMover.linkB,
         y: knee.y + Math.sin(tibiaRad) * legMover.linkB
       };
+    }
+
+    function getLowerAssemblyReach() {
+      return Math.hypot(legMover.linkB, legMover.linkC);
+    }
+
+    function getLowerAssemblyOffsetRad() {
+      return Math.atan2(legMover.linkC, legMover.linkB);
     }
 
     function clampServoDisplayAngle(angle) {
@@ -1086,7 +1110,7 @@
 
     function getLegServoAngles(knee, target) {
       const femurRad = Math.atan2(knee.y - legMover.base.y, knee.x - legMover.base.x);
-      const tibiaRad = Math.atan2(target.y - knee.y, target.x - knee.x);
+      const tibiaRad = getTibiaRadians(knee, target);
       const femurGeometryDeg = -(femurRad * 180 / Math.PI);
       const tibiaGeometryDeg = -(tibiaRad * 180 / Math.PI);
       return {
@@ -1106,7 +1130,7 @@
       const dy = target.y - legMover.base.y;
       const distance = Math.hypot(dx, dy);
       const a = legMover.linkA;
-      const b = legMover.linkB;
+      const b = getLowerAssemblyReach();
 
       const along = (a * a - b * b + distance * distance) / (2 * distance);
       const height = Math.sqrt(Math.max(0, a * a - along * along));
@@ -1146,7 +1170,7 @@
         if (legMover.kneeLocked && legMover.lockedTibiaRad !== null) {
           target = targetFromKneeAndTibia(knee, legMover.lockedTibiaRad);
         } else {
-          target = pointAtRadius(knee, target, legMover.linkB);
+          target = pointAtRadius(knee, target, getLowerAssemblyReach());
         }
         legMover.knee = knee;
         legMover.target = target;
@@ -1162,12 +1186,17 @@
     function renderLegMover() {
       if (!legMoverSvg) return;
       const pose = solveLegPreview();
+      const tibiaRad = getTibiaRadians(pose.knee, pose.target);
+      const ankle = ankleFromKneeAndTibia(pose.knee, tibiaRad);
 
       legLinkA.setAttribute('d', `M ${legMover.base.x} ${legMover.base.y} L ${pose.knee.x} ${pose.knee.y}`);
-      legLinkB.setAttribute('d', `M ${pose.knee.x} ${pose.knee.y} L ${pose.target.x} ${pose.target.y}`);
+      legLinkB.setAttribute('d', `M ${pose.knee.x} ${pose.knee.y} L ${ankle.x} ${ankle.y}`);
+      legLinkC.setAttribute('d', `M ${ankle.x} ${ankle.y} L ${pose.target.x} ${pose.target.y}`);
       legKneeDot.setAttribute('cx', pose.knee.x);
       legKneeDot.setAttribute('cy', pose.knee.y);
       legKneeDot.classList.toggle('locked', legMover.kneeLocked);
+      legAnkleDot.setAttribute('cx', ankle.x);
+      legAnkleDot.setAttribute('cy', ankle.y);
       legEffectorDot.setAttribute('cx', pose.target.x);
       legEffectorDot.setAttribute('cy', pose.target.y);
       legBaseDot.setAttribute('cx', legMover.base.x);
@@ -1195,7 +1224,7 @@
           : pointAtRadius(legMover.base, point, legMover.linkA);
         const target = legMover.kneeLocked && legMover.lockedTibiaRad !== null
           ? targetFromKneeAndTibia(knee, legMover.lockedTibiaRad)
-          : pointAtRadius(knee, legMover.target, legMover.linkB);
+          : pointAtRadius(knee, legMover.target, getLowerAssemblyReach());
         if (!isServoLimitedPose(knee, target)) return;
         legMover.knee = knee;
         legMover.target = target;
@@ -1206,7 +1235,7 @@
           if (legMover.kneeLocked && legMover.lockedTibiaRad !== null) {
             target = targetFromKneeAndTibia(knee, legMover.lockedTibiaRad);
           } else {
-            target = pointAtRadius(knee, point, legMover.linkB);
+            target = pointAtRadius(knee, point, getLowerAssemblyReach());
           }
           if (!isServoLimitedPose(knee, target)) return;
           legMover.knee = knee;
@@ -1214,8 +1243,8 @@
         } else if (legMover.kneeLocked && legMover.knee) {
           const tibiaRad = legMover.lockedTibiaRad ?? getTibiaRadians(legMover.knee, legMover.target);
           const tibiaVector = {
-            x: Math.cos(tibiaRad) * legMover.linkB,
-            y: Math.sin(tibiaRad) * legMover.linkB
+            x: Math.cos(tibiaRad) * legMover.linkB + Math.cos(tibiaRad + Math.PI / 2) * legMover.linkC,
+            y: Math.sin(tibiaRad) * legMover.linkB + Math.sin(tibiaRad + Math.PI / 2) * legMover.linkC
           };
           const desiredKnee = {
             x: point.x - tibiaVector.x,
@@ -1357,10 +1386,7 @@
         legMover.kneeLocked = false;
         legMover.lockedTibiaRad = null;
         legMover.knee = { x: kneeX, y: kneeY };
-        legMover.target = {
-          x: kneeX + legMover.linkB,
-          y: kneeY
-        };
+        legMover.target = targetFromKneeAndTibia(legMover.knee, 0);
         renderLegMover();
         syncSlidersFromLegMover(true);
       });
