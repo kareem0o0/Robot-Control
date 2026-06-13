@@ -724,7 +724,10 @@
       linkB: 120,
       knee: { x: 275, y: 220 },
       target: { x: 395, y: 220 },
+      baseLocked: false,
+      lockedFemurRad: null,
       kneeLocked: false,
+      lockedTibiaRad: null,
       dragging: false,
       dragTarget: null,
       kneePointerId: null,
@@ -855,10 +858,12 @@
       const femurRad = -femurGeometryDeg * Math.PI / 180;
       const lowerRad = -tibiaGeometryDeg * Math.PI / 180;
 
-      const knee = {
-        x: legMover.base.x + Math.cos(femurRad) * legMover.linkA,
-        y: legMover.base.y + Math.sin(femurRad) * legMover.linkA
-      };
+      const knee = legMover.baseLocked && legMover.lockedFemurRad !== null
+        ? kneeFromFemur(legMover.lockedFemurRad)
+        : {
+            x: legMover.base.x + Math.cos(femurRad) * legMover.linkA,
+            y: legMover.base.y + Math.sin(femurRad) * legMover.linkA
+          };
       const target = {
         x: knee.x + Math.cos(lowerRad) * legMover.linkB,
         y: knee.y + Math.sin(lowerRad) * legMover.linkB
@@ -866,6 +871,12 @@
 
       legMover.knee = knee;
       legMover.target = target;
+      if (legMover.baseLocked) {
+        legMover.lockedFemurRad = getFemurRadians(knee);
+      }
+      if (legMover.kneeLocked) {
+        legMover.lockedTibiaRad = getTibiaRadians(knee, target);
+      }
       renderLegMover();
     }
 
@@ -1047,6 +1058,28 @@
       };
     }
 
+    function getTibiaRadians(knee, target) {
+      return Math.atan2(target.y - knee.y, target.x - knee.x);
+    }
+
+    function getFemurRadians(knee) {
+      return Math.atan2(knee.y - legMover.base.y, knee.x - legMover.base.x);
+    }
+
+    function kneeFromFemur(femurRad) {
+      return {
+        x: legMover.base.x + Math.cos(femurRad) * legMover.linkA,
+        y: legMover.base.y + Math.sin(femurRad) * legMover.linkA
+      };
+    }
+
+    function targetFromKneeAndTibia(knee, tibiaRad) {
+      return {
+        x: knee.x + Math.cos(tibiaRad) * legMover.linkB,
+        y: knee.y + Math.sin(tibiaRad) * legMover.linkB
+      };
+    }
+
     function clampServoDisplayAngle(angle) {
       return Math.max(0, Math.min(180, Math.round(angle)));
     }
@@ -1107,8 +1140,14 @@
         legMover.target = target;
         knee = solveKneeForTarget(target);
       } else {
-        knee = pointAtRadius(legMover.base, knee, legMover.linkA);
-        target = pointAtRadius(knee, target, legMover.linkB);
+        knee = legMover.baseLocked && legMover.lockedFemurRad !== null
+          ? kneeFromFemur(legMover.lockedFemurRad)
+          : pointAtRadius(legMover.base, knee, legMover.linkA);
+        if (legMover.kneeLocked && legMover.lockedTibiaRad !== null) {
+          target = targetFromKneeAndTibia(knee, legMover.lockedTibiaRad);
+        } else {
+          target = pointAtRadius(knee, target, legMover.linkB);
+        }
         legMover.knee = knee;
         legMover.target = target;
       }
@@ -1133,6 +1172,7 @@
       legEffectorDot.setAttribute('cy', pose.target.y);
       legBaseDot.setAttribute('cx', legMover.base.x);
       legBaseDot.setAttribute('cy', legMover.base.y);
+      legBaseDot.classList.toggle('locked', legMover.baseLocked);
       const localX = Math.round(pose.target.x - legMover.base.x);
       const localY = Math.round(legMover.base.y - pose.target.y);
       legMoverFemur.textContent = `${pose.femurDeg} deg`;
@@ -1150,16 +1190,41 @@
     function moveLegEffector(event) {
       const point = getSvgPoint(event);
       if (legMover.dragTarget === 'knee') {
-        if (legMover.kneeLocked) return;
-        const knee = pointAtRadius(legMover.base, point, legMover.linkA);
-        const target = pointAtRadius(knee, legMover.target, legMover.linkB);
+        const knee = legMover.baseLocked && legMover.lockedFemurRad !== null
+          ? kneeFromFemur(legMover.lockedFemurRad)
+          : pointAtRadius(legMover.base, point, legMover.linkA);
+        const target = legMover.kneeLocked && legMover.lockedTibiaRad !== null
+          ? targetFromKneeAndTibia(knee, legMover.lockedTibiaRad)
+          : pointAtRadius(knee, legMover.target, legMover.linkB);
         if (!isServoLimitedPose(knee, target)) return;
         legMover.knee = knee;
         legMover.target = target;
       } else {
-        if (legMover.kneeLocked && legMover.knee) {
-          const target = pointAtRadius(legMover.knee, point, legMover.linkB);
-          if (!isServoLimitedPose(legMover.knee, target)) return;
+        if (legMover.baseLocked && legMover.lockedFemurRad !== null) {
+          const knee = kneeFromFemur(legMover.lockedFemurRad);
+          let target;
+          if (legMover.kneeLocked && legMover.lockedTibiaRad !== null) {
+            target = targetFromKneeAndTibia(knee, legMover.lockedTibiaRad);
+          } else {
+            target = pointAtRadius(knee, point, legMover.linkB);
+          }
+          if (!isServoLimitedPose(knee, target)) return;
+          legMover.knee = knee;
+          legMover.target = target;
+        } else if (legMover.kneeLocked && legMover.knee) {
+          const tibiaRad = legMover.lockedTibiaRad ?? getTibiaRadians(legMover.knee, legMover.target);
+          const tibiaVector = {
+            x: Math.cos(tibiaRad) * legMover.linkB,
+            y: Math.sin(tibiaRad) * legMover.linkB
+          };
+          const desiredKnee = {
+            x: point.x - tibiaVector.x,
+            y: point.y - tibiaVector.y
+          };
+          const knee = pointAtRadius(legMover.base, desiredKnee, legMover.linkA);
+          const target = targetFromKneeAndTibia(knee, tibiaRad);
+          if (!isServoLimitedPose(knee, target)) return;
+          legMover.knee = knee;
           legMover.target = target;
         } else if (legMover.knee) {
           const target = clampLegTarget(point);
@@ -1210,7 +1275,7 @@
           legMover.kneePointerMoved = true;
         }
 
-        if (!legMover.kneeLocked && legMover.kneePointerMoved) {
+        if (legMover.kneePointerMoved) {
           moveLegEffector(event);
         }
       });
@@ -1225,6 +1290,9 @@
             x: Number(legKneeDot.getAttribute('cx')),
             y: Number(legKneeDot.getAttribute('cy'))
           };
+          legMover.lockedTibiaRad = legMover.kneeLocked
+            ? getTibiaRadians(legMover.knee, legMover.target)
+            : null;
           renderLegMover();
         } else {
           renderLegMover();
@@ -1245,6 +1313,19 @@
         legMover.kneePointerStart = null;
         legMover.kneePointerMoved = false;
         legMover.dragTarget = null;
+      });
+
+      legBaseDot.addEventListener('pointerdown', (event) => {
+        event.stopPropagation();
+      });
+
+      legBaseDot.addEventListener('pointerup', (event) => {
+        event.stopPropagation();
+        legMover.baseLocked = !legMover.baseLocked;
+        legMover.lockedFemurRad = legMover.baseLocked
+          ? getFemurRadians(legMover.knee)
+          : null;
+        renderLegMover();
       });
 
       legMoverSvg.addEventListener('pointermove', (event) => {
@@ -1271,7 +1352,10 @@
       legMoverReset.addEventListener('click', () => {
         const kneeX = legMover.base.x + legMover.linkA;
         const kneeY = legMover.base.y;
+        legMover.baseLocked = false;
+        legMover.lockedFemurRad = null;
         legMover.kneeLocked = false;
+        legMover.lockedTibiaRad = null;
         legMover.knee = { x: kneeX, y: kneeY };
         legMover.target = {
           x: kneeX + legMover.linkB,
