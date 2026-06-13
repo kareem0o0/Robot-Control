@@ -1,0 +1,850 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
+  <title>Hexabot  -  Advanced Controller</title>
+  <!-- Font Awesome 6 for clean icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep: #0a1219;
+      --bg-card: #101b24;
+      --bg-input: #15222e;
+      --border: #1e2f3c;
+      --accent: #3ccf91;
+      --accent-glow: rgba(60, 207, 145, 0.3);
+      --text: #e3f0f5;
+      --muted: #7f95a8;
+      --warning: #f5a623;
+      --danger: #e15554;
+      --info: #4fc3f7;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: 0.2s ease;
+    }
+
+    body {
+      background: var(--bg-deep);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+      margin: 0;
+      padding: 1.5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .dashboard {
+      max-width: 1400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* header */
+    .mast {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      padding: 1rem 2rem;
+      border-radius: 60px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px -10px rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+    }
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .logo-icon {
+      font-size: 2.2rem;
+      color: var(--accent);
+      filter: drop-shadow(0 0 8px var(--accent-glow));
+    }
+    .logo-text {
+      font-weight: 700;
+      font-size: 1.7rem;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff, #b0d9f5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .product-badge {
+      background: #1a2c3b;
+      padding: 0.4rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #b6e2ff;
+      border: 1px solid #2e4b62;
+    }
+    .status-led {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #0e1e28;
+      padding: 0.5rem 1.2rem;
+      border-radius: 30px;
+      font-size: 0.9rem;
+    }
+    .mast-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .back-dashboard {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #1b2f3c;
+      border: 1px solid #2a4457;
+      border-radius: 30px;
+      padding: 0.5rem 1.2rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .back-dashboard:hover {
+      background: #254a5e;
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .led {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #5f7d9c;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .led.active {
+      background: var(--accent);
+      box-shadow: 0 0 14px var(--accent);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(6px);
+      transition: all var(--transition);
+    }
+    .card:hover {
+      border-color: #2e4f66;
+    }
+    .card h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #cbe5ff;
+      letter-spacing: 0.3px;
+    }
+    .card h3 i {
+      color: var(--accent);
+      font-size: 1.3rem;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      align-items: center;
+      margin-bottom: 0.8rem;
+    }
+
+    input, button, .btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 1rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    button, .btn {
+      background: #1b2f3c;
+      cursor: pointer;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      border: 1px solid #2a4457;
+    }
+    button:hover, .btn:hover {
+      background: #254a5e;
+      border-color: var(--accent);
+      color: white;
+    }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a1a1a;
+      font-weight: bold;
+    }
+    .btn-primary:hover {
+      background: #4ae0a3;
+    }
+    .btn-danger {
+      background: #4e2a2a;
+      border-color: #b15555;
+      color: #ffb8b8;
+    }
+    .btn-danger:hover {
+      background: #6b3737;
+    }
+
+    .legs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+    .leg-card {
+      background: #0a141c;
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      border: 1px solid #1f3443;
+    }
+    .leg-card h4 {
+      font-size: 1rem;
+      margin-bottom: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      color: #bdd3e8;
+    }
+    .joint {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.7rem;
+    }
+    .joint label {
+      width: 55px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .slider {
+      flex: 1;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #1e3345;
+      border-radius: 5px;
+      outline: none;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    .angle-badge {
+      background: #0e212e;
+      padding: 0.2rem 0.5rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      min-width: 45px;
+      text-align: center;
+    }
+
+    .macro-list {
+      background: #0b1620;
+      min-height: 50px;
+      border-radius: 10px;
+      padding: 0.6rem;
+      max-height: 120px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      border: 1px solid #1d3040;
+    }
+    .macro-chip {
+      background: #1c3343;
+      padding: 0.3rem 0.9rem;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .terminal-box {
+      background: #060e14;
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      height: 240px;
+      overflow-y: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #a7e0ff;
+      border: 1px solid #1c3340;
+      white-space: pre-wrap;
+    }
+
+    #log {
+      background: #0b1722;
+      border-radius: 8px;
+      padding: 0.6rem;
+      max-height: 70px;
+      overflow-y: auto;
+      font-size: 0.8rem;
+      color: #9fcbd9;
+    }
+
+    .control-row {
+      background: #0f1f2b;
+      border-radius: 10px;
+      padding: 0.7rem;
+      margin: 0.8rem 0;
+    }
+
+    .group-control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.8rem;
+      margin-top: 0.8rem;
+    }
+
+    .group-control {
+      background: #0a141c;
+      border: 1px solid #1f3443;
+      border-radius: var(--radius-sm);
+      padding: 0.9rem;
+      min-width: 0;
+    }
+
+    .group-control-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      margin-bottom: 0.8rem;
+      color: #bdd3e8;
+      font-weight: 600;
+    }
+
+    .group-control .joint {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      .legs-grid {
+        grid-template-columns: repeat(2,1fr);
+      }
+      .mast {
+        align-items: flex-start;
+        border-radius: var(--radius);
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .mast-actions {
+        align-items: stretch;
+        flex-direction: column;
+        width: 100%;
+      }
+      .group-control-grid {
+        grid-template-columns: 1fr;
+      }
+      .back-dashboard,
+      .status-led {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard">
+  <!-- Header -->
+  <header class="mast">
+    <a href="projects-hub.html" class="logo-area">
+      <i class="fas fa-robot logo-icon"></i>
+      <span class="logo-text">Hexabot</span>
+      <span class="product-badge"><i class="fas fa-sliders-h"></i> Controller Pro</span>
+    </a>
+    <div class="mast-actions">
+      <a class="back-dashboard" href="main-dashboard.html">
+        <i class="fas fa-arrow-left"></i> Full Dashboard
+      </a>
+      <div class="status-led" id="connection-indicator">
+        <span class="led" id="ws-led"></span>
+        <span id="ws-status-text">Disconnected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="main-grid">
+    <!-- LEFT COLUMN -->
+    <div class="left-col" style="display: flex; flex-direction: column; gap: 1.5rem;">
+      
+      <!-- Connection Card -->
+      <div class="card">
+        <h3><i class="fas fa-plug"></i> Connection</h3>
+        <div class="row">
+          <input id="ws-url" value="ws://192.168.1.61/ws" style="flex:2;" placeholder="WebSocket URL">
+          <button class="btn" id="ws-open"><i class="fas fa-link"></i> Connect</button>
+          <button class="btn" id="ws-close" style="background:#2a1e1e;"><i class="fas fa-unlink"></i></button>
+        </div>
+        <div id="log"></div>
+      </div>
+
+      <!-- Joint Matrix -->
+      <div class="card">
+        <h3><i class="fas fa-microchip"></i> Joint Matrix</h3>
+        <div class="control-row">
+          <div class="row" style="justify-content: flex-end;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span><i class="fas fa-tachometer-alt"></i> Speed</span>
+              <input id="speed-scale" type="range" min="10" max="100" value="100" class="slider" style="width: 100px;" oninput="onSpeedScale(this.value)">
+              <span id="speed-val" style="font-weight: bold; min-width: 45px;">100%</span>
+            </div>
+          </div>
+        </div>
+        <div class="control-row">
+          <h3 style="margin-bottom: 0.8rem;"><i class="fas fa-layer-group"></i> Joint Group Control</h3>
+          <div class="group-control-grid" id="group-control-grid">
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Coxa</span>
+                <span id="group-ang-0" class="angle-badge">90 deg</span>
+              </div>
+              <div class="joint">
+                <input id="group-sl-0" type="range" min="0" max="180" value="90" class="slider" oninput="window.onGroupSlider(0, this.value)">
+              </div>
+            </div>
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Femur</span>
+                <span id="group-ang-1" class="angle-badge">90 deg</span>
+              </div>
+              <div class="joint">
+                <input id="group-sl-1" type="range" min="0" max="180" value="90" class="slider" oninput="window.onGroupSlider(1, this.value)">
+              </div>
+            </div>
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Tibia</span>
+                <span id="group-ang-2" class="angle-badge">90 deg</span>
+              </div>
+              <div class="joint">
+                <input id="group-sl-2" type="range" min="0" max="180" value="90" class="slider" oninput="window.onGroupSlider(2, this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="legs-grid" id="legs-grid"></div>
+      </div>
+
+      <!-- Macro Manager -->
+      <div class="card">
+        <h3><i class="fas fa-film"></i> Macro Pose Manager</h3>
+        <div class="row">
+          <button class="btn" id="capture-frame"><i class="fas fa-camera"></i> Capture Frame</button>
+          <button class="btn btn-primary" id="play-macro"><i class="fas fa-play"></i> Play</button>
+          <button class="btn" id="clear-macro"><i class="fas fa-trash-alt"></i> Clear</button>
+          <div style="display: flex; align-items: center; gap: 0.3rem; margin-left: auto;">
+            <label>Delay(ms)</label>
+            <input id="macro-delay" type="number" value="500" style="width: 85px;">
+          </div>
+        </div>
+        <div class="macro-list" id="macro-list"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col" style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <div class="card">
+        <h3><i class="fas fa-globe"></i> Global Actions</h3>
+        <div class="row" style="flex-direction: column; align-items: stretch;">
+          <button class="btn" onclick="sendCmd({command:'engageAll'})" style="justify-content: center;"><i class="fas fa-toggle-on"></i> Enable Servos</button>
+          <button class="btn" id="builtin-led-btn" onclick="toggleBuiltinLed()" style="justify-content: center;"><i class="fas fa-lightbulb"></i> Built-in LED: OFF</button>
+          <button class="btn" onclick="centerAllServos()" style="justify-content: center;"><i class="fas fa-dot-circle"></i> Center All Servos</button>
+          <button class="btn btn-danger" onclick="sendCmd({command:'emergencyStop'})" style="justify-content: center;"><i class="fas fa-skull-crosswalk"></i> E-STOP</button>
+          <a class="btn" href="hexabot-model-viewer.html" style="justify-content: center; text-decoration: none;"><i class="fas fa-cube"></i> View Bot Model</a>
+        </div>
+        <p style="font-size:0.8rem; color: var(--muted); margin-top: 0.7rem;"><i class="fas fa-info-circle"></i> These commands are sent directly to the ESP32 over WebSocket.</p>
+      </div>
+
+      <div class="card">
+        <h3><i class="fas fa-terminal"></i> Terminal</h3>
+        <div class="terminal-box" id="terminal"></div>
+        <div class="row" style="margin-top: 0.8rem;">
+          <input id="cmd-input" placeholder='e.g. {"command":"getStatus"}' style="flex:1;">
+          <button class="btn" id="send-cmd-btn"><i class="fas fa-paper-plane"></i> Send</button>
+        </div>
+      </div>
+      
+      <div style="font-size:0.75rem; color: #4b6377; text-align: right;">
+        <i class="far fa-clock"></i> v2.0  -  Hexabot enhanced
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ---------- CONSTANTS & STATE ----------
+    const NUM_SERVOS = 18;
+    const JOINT_NAMES = ['Coxa', 'Femur', 'Tibia'];
+    const JOINT_SERVO_GROUPS = [
+      [0, 3, 6, 9, 12, 15],
+      [1, 4, 7, 10, 13, 16],
+      [2, 5, 8, 11, 14, 17]
+    ];
+    let macroFrames = [];
+    let ws = null;
+    let wsConnected = false;
+
+    // DOM elements
+    const wsUrlInput = document.getElementById('ws-url');
+    const wsOpenBtn = document.getElementById('ws-open');
+    const wsCloseBtn = document.getElementById('ws-close');
+    const wsLed = document.getElementById('ws-led');
+    const wsStatusText = document.getElementById('ws-status-text');
+    const logDiv = document.getElementById('log');
+    const terminalDiv = document.getElementById('terminal');
+    const legsGrid = document.getElementById('legs-grid');
+    const speedScale = document.getElementById('speed-scale');
+    const speedVal = document.getElementById('speed-val');
+    const macroListDiv = document.getElementById('macro-list');
+    const captureBtn = document.getElementById('capture-frame');
+    const playMacroBtn = document.getElementById('play-macro');
+    const clearMacroBtn = document.getElementById('clear-macro');
+    const macroDelayInput = document.getElementById('macro-delay');
+    const cmdInput = document.getElementById('cmd-input');
+    const sendCmdBtn = document.getElementById('send-cmd-btn');
+
+    // ---------- LOGGING & TERMINAL ----------
+    function log(type, msg) {
+      const entry = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logDiv.innerHTML += entry + '<br>';
+      logDiv.scrollTop = logDiv.scrollHeight;
+      terminalDiv.innerHTML += entry + '\n';
+      terminalDiv.scrollTop = terminalDiv.scrollHeight;
+      if (terminalDiv.children.length > 15) {
+        // keep terminal clean
+      }
+    }
+
+    function updateConnectionUI(connected) {
+      wsConnected = connected;
+      if (connected) {
+        wsLed.className = 'led active';
+        wsStatusText.textContent = 'Connected';
+      } else {
+        wsLed.className = 'led';
+        wsStatusText.textContent = 'Disconnected';
+      }
+    }
+
+    // ---------- WEBSOCKET HANDLING ----------
+    function wsConnect(url, onOpen, onMessage, onClose) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+      try {
+        ws = new WebSocket(url);
+      } catch (e) {
+        log('error', 'Invalid WebSocket URL');
+        return;
+      }
+      
+      ws.onopen = () => {
+        updateConnectionUI(true);
+        log('log', 'WebSocket connected');
+        wsSend({ command: 'getStatus' });
+        if (onOpen) onOpen();
+      };
+      ws.onmessage = (event) => {
+        log('log', 'Message: ' + event.data);
+        handleStatusMessage(event.data);
+        if (onMessage) onMessage(event.data);
+      };
+      ws.onclose = () => {
+        updateConnectionUI(false);
+        log('log', 'WebSocket closed');
+        if (onClose) onClose();
+      };
+      ws.onerror = (err) => {
+        log('error', 'WebSocket error');
+        updateConnectionUI(false);
+      };
+    }
+
+    function wsSend(obj) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        log('error', 'WebSocket not connected');
+        return false;
+      }
+      try {
+        ws.send(JSON.stringify(obj));
+        return true;
+      } catch (e) {
+        log('error', 'Send failed');
+        return false;
+      }
+    }
+
+    function setServoUi(idx, angle, suffix = '') {
+      const slider = document.getElementById('sl-' + idx);
+      const angleSpan = document.getElementById('ang-' + idx);
+      if (slider && document.activeElement !== slider) {
+        slider.value = angle;
+      }
+      if (angleSpan) {
+        angleSpan.textContent = `${Math.round(angle)} deg${suffix}`;
+      }
+    }
+
+    function sendServoAngle(idx, angle) {
+      return wsSend({ command: 'set', idx: idx, servo_id: idx, angle: angle, engage: true });
+    }
+
+    function handleStatusMessage(raw) {
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        return;
+      }
+
+      if (Array.isArray(data.servos)) {
+        data.servos.forEach((servo) => {
+          const idx = Number(servo.idx);
+          if (!Number.isInteger(idx)) return;
+
+          const slider = document.getElementById('sl-' + idx);
+          const angle = servo.target ?? servo.current;
+
+          if (angle !== undefined) {
+            const activeSuffix = servo.enabled === false ? ' off' : '';
+            if (slider && document.activeElement === slider) {
+              const angleSpan = document.getElementById('ang-' + idx);
+              if (angleSpan) angleSpan.textContent = `${Math.round(angle)} deg${activeSuffix}`;
+            } else {
+              setServoUi(idx, angle, activeSuffix);
+            }
+          }
+        });
+      }
+
+      if (typeof data.globalSpeed === 'number') {
+        const percent = Math.round(data.globalSpeed * 100);
+        speedScale.value = Math.max(Number(speedScale.min), Math.min(Number(speedScale.max), percent));
+        speedVal.textContent = speedScale.value + '%';
+      }
+    }
+
+    // ---------- BUILD LEG GRID ----------
+    function buildLegGrid() {
+      legsGrid.innerHTML = '';
+      for (let leg = 1; leg <= 6; leg++) {
+        const legCard = document.createElement('div');
+        legCard.className = 'leg-card';
+        legCard.innerHTML = `<h4><span> Leg ${leg}</span><i class="fas fa-chevron-down" style="font-size:0.7rem; opacity:0.6;"></i></h4>`;
+        const container = document.createElement('div');
+        
+        for (let j = 0; j < 3; j++) {
+          const idx = (leg - 1) * 3 + j;
+          const jointDiv = document.createElement('div');
+          jointDiv.className = 'joint';
+          jointDiv.innerHTML = `
+            <label>${JOINT_NAMES[j]}</label>
+            <input id="sl-${idx}" type="range" min="0" max="180" value="90" class="slider" oninput="window.onSlider(${idx}, this.value)">
+            <span id="ang-${idx}" class="angle-badge">90 deg</span>
+          `;
+          container.appendChild(jointDiv);
+        }
+        legCard.appendChild(container);
+        legsGrid.appendChild(legCard);
+      }
+    }
+
+    // Expose to global scope for inline handlers
+    window.onSlider = function(idx, val) {
+      const angle = parseInt(val);
+      setServoUi(idx, angle);
+      if (sendServoAngle(idx, angle)) {
+        log('log', `Servo ${idx} -> ${angle} deg`);
+      }
+    };
+
+    window.onGroupSlider = function(jointIdx, val) {
+      const angle = parseInt(val);
+      const group = JOINT_SERVO_GROUPS[jointIdx] || [];
+      const groupAngle = document.getElementById('group-ang-' + jointIdx);
+      if (groupAngle) groupAngle.textContent = angle + ' deg';
+
+      let sent = 0;
+      group.forEach((idx) => {
+        setServoUi(idx, angle);
+        if (sendServoAngle(idx, angle)) sent++;
+      });
+
+      if (sent > 0) {
+        log('log', `${JOINT_NAMES[jointIdx]} group -> ${angle} deg (${sent} servos)`);
+      }
+    };
+
+    window.onSpeedScale = function(v) {
+      speedVal.textContent = v + '%';
+      const scale = parseInt(v) / 100.0;
+      wsSend({ command: 'setGlobalSpeed', scale: scale });
+    };
+
+    // ---------- MACRO FUNCTIONS ----------
+    function updateMacroList() {
+      macroListDiv.innerHTML = '';
+      if (macroFrames.length === 0) {
+        macroListDiv.innerHTML = '<span style="color: #4f6b82; padding: 0.5rem;">No frames captured yet.</span>';
+        return;
+      }
+      macroFrames.forEach((m, i) => {
+        const chip = document.createElement('div');
+        chip.className = 'macro-chip';
+        chip.innerHTML = `<i class="fas fa-image"></i> ${m} <span style="color:#7f95a8;">#${i+1}</span>`;
+        macroListDiv.appendChild(chip);
+      });
+    }
+
+    captureBtn.addEventListener('click', () => {
+      if (!wsConnected) { log('error', 'Connect first'); return; }
+      if (wsSend({ command: 'saveMacroFrame' })) {
+        macroFrames.push('Pose ' + (macroFrames.length + 1));
+        updateMacroList();
+        log('log', 'Save macro frame command sent');
+      }
+    });
+
+    playMacroBtn.addEventListener('click', () => {
+      if (!wsConnected) return;
+      const delay = parseInt(macroDelayInput.value) || 500;
+      wsSend({ command: 'playMacro', delay: delay });
+      log('log', 'Playing macro with delay ' + delay + 'ms');
+    });
+
+    clearMacroBtn.addEventListener('click', () => {
+      if (wsSend({ command: 'clearMacro' })) {
+        macroFrames = [];
+        updateMacroList();
+        log('log', 'Clear macro command sent');
+      }
+    });
+
+    // ---------- GLOBAL COMMANDS ----------
+    window.centerAllServos = function() {
+      for (let i = 0; i < NUM_SERVOS; i++) {
+        setServoUi(i, 90);
+      }
+      for (let i = 0; i < JOINT_SERVO_GROUPS.length; i++) {
+        const groupSlider = document.getElementById('group-sl-' + i);
+        const groupAngle = document.getElementById('group-ang-' + i);
+        if (groupSlider) groupSlider.value = 90;
+        if (groupAngle) groupAngle.textContent = '90 deg';
+      }
+      wsSend({ command: 'centerAll' });
+      log('log', 'Center All command sent');
+    };
+
+    window.sendCmd = function(obj) {
+      if (!wsSend(obj)) log('error', 'Command failed - not connected');
+    };
+
+    let builtinLedOn = false;
+    window.toggleBuiltinLed = function() {
+      builtinLedOn = !builtinLedOn;
+      if (wsSend({ command: 'setBuiltinLed', state: builtinLedOn })) {
+        const ledBtn = document.getElementById('builtin-led-btn');
+        ledBtn.innerHTML = `<i class="fas fa-lightbulb"></i> Built-in LED: ${builtinLedOn ? 'ON' : 'OFF'}`;
+        log('log', `Built-in LED ${builtinLedOn ? 'ON' : 'OFF'} command sent`);
+      } else {
+        builtinLedOn = !builtinLedOn;
+      }
+    };
+
+    // ---------- TERMINAL COMMAND SEND ----------
+    sendCmdBtn.addEventListener('click', () => {
+      const raw = cmdInput.value.trim();
+      if (!raw) return;
+      try {
+        const obj = JSON.parse(raw);
+        wsSend(obj);
+      } catch (e) {
+        // send as plain command object
+        wsSend({ command: raw });
+      }
+      cmdInput.value = '';
+    });
+
+    cmdInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendCmdBtn.click();
+    });
+
+    // ---------- WEBSOCKET CONNECT/DISCONNECT BUTTONS ----------
+    wsOpenBtn.addEventListener('click', () => {
+      const url = wsUrlInput.value.trim();
+      if (!url) return;
+      wsStatusText.textContent = 'Connecting...';
+      log('log', 'Connecting to ' + url);
+      wsConnect(url, 
+        () => { log('log', 'Connection established'); },
+        (msg) => { /* handled in onmessage */ },
+        () => { updateConnectionUI(false); }
+      );
+    });
+
+    wsCloseBtn.addEventListener('click', () => {
+      if (ws) {
+        ws.close();
+        updateConnectionUI(false);
+        log('log', 'Connection closed by user');
+      }
+    });
+
+    // Initialize grid and UI
+    buildLegGrid();
+    updateMacroList();
+    updateConnectionUI(false);
+    log('log', 'Hexabot dashboard ready. Connect to your ESP.');
+  })();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,956 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KEMO // Control Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+/* -------------------------------------------------------
+   KEMO CONTROL ROOM  Mission Launcher
+   Aesthetic: Modern deep-space / biotech industrial
+   ------------------------------------------------------- */
+
+:root {
+  --void:      #0a1219;
+  --deep:      #0d1924;
+  --surface:   #101b24;
+  --panel:     #152230;
+  --panel2:    #1a2c3b;
+  --border:    rgba(60, 207, 145, 0.08);
+  --border2:   rgba(60, 207, 145, 0.18);
+  --border3:   rgba(60, 207, 145, 0.35);
+  --accent:    #3ccf91;
+  --accent-dim: rgba(60, 207, 145, 0.12);
+  --accent-glow: rgba(60, 207, 145, 0.06);
+  --green:     #3ccf91;
+  --green-dim: rgba(60, 207, 145, 0.1);
+  --amber:     #f5a623;
+  --amber-dim: rgba(245, 166, 35, 0.1);
+  --red:       #e15554;
+  --red-dim:   rgba(225, 85, 84, 0.1);
+  --purple:    #9d4edd;
+  --blue:      #4fc3f7;
+  --text:      #e3f0f5;
+  --text2:     #7f95a8;
+  --text3:     #4a6377;
+  --mono:      'JetBrains Mono', 'Share Tech Mono', monospace;
+  --head:      'Inter', 'Rajdhani', sans-serif;
+  --body:      'Inter', 'Exo 2', sans-serif;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/*  Grid background  */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(60, 207, 145, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(60, 207, 145, 0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/*  Noise texture  */
+.noise {
+  position: fixed;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+}
+
+/*  Top header bar  */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 64px;
+  background: rgba(13, 25, 36, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  z-index: 100;
+  gap: 24px;
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.5;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.logo-icon {
+  font-size: 28px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 10px rgba(60, 207, 145, 0.4));
+}
+
+.logo-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-text {
+  font-family: var(--head);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  background: linear-gradient(135deg, #fff, #b0e8d0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text2);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.topbar-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+}
+
+.sys-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+  background: var(--surface);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.sys-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.sys-dot.amber { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.sys-dot.red   { background: var(--red);   box-shadow: 0 0 8px var(--red);   animation: none; }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+}
+
+.clock {
+  font-size: 15px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  background: var(--surface);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+/*  Bottom status bar  */
+.statusbar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 36px;
+  background: rgba(13, 25, 36, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 28px;
+  z-index: 100;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.sb-item { display: flex; align-items: center; gap: 8px; }
+.sb-item span { color: var(--text2); }
+.sb-dot { width: 6px; height: 6px; border-radius: 50%; }
+.sb-dot.ok   { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.sb-dot.warn { background: var(--amber); }
+
+/*  Main content  */
+.main {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  padding: 88px 40px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/*  Header section  */
+.hero {
+  text-align: center;
+  padding: 30px 0 40px;
+  position: relative;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: fade-up 0.6s 0.2s forwards;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hero-eyebrow::before,
+.hero-eyebrow::after {
+  content: '';
+  width: 30px;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+.hero-title {
+  font-family: var(--head);
+  font-size: clamp(42px, 7vw, 80px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 12px;
+  opacity: 0;
+  animation: fade-up 0.6s 0.4s forwards;
+}
+
+.hero-title .accent {
+  background: linear-gradient(135deg, var(--accent), #7df0b9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  color: var(--text2);
+  text-transform: uppercase;
+  opacity: 0;
+  animation: fade-up 0.6s 0.6s forwards;
+}
+
+.hero-line {
+  width: 180px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  margin: 24px auto 0;
+  border-radius: 2px;
+  opacity: 0;
+  animation: fade-up 0.6s 0.8s forwards;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/*  Section label  */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: fade-up 0.5s 0.9s forwards;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border2);
+}
+
+.section-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  background: var(--surface);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+/*  Projects grid  */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+  opacity: 0;
+  animation: fade-up 0.5s 1.0s forwards;
+}
+
+/*  Project card  */
+.project-card {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.project-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, var(--accent-glow), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.project-card:hover::before { opacity: 1; }
+.project-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 0 40px rgba(60, 207, 145, 0.1), 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* card top accent line */
+.card-accent {
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  border-radius: 3px 3px 0 0;
+}
+
+.card-accent.green  { background: linear-gradient(90deg, var(--green), transparent); }
+.card-accent.amber  { background: linear-gradient(90deg, var(--amber), transparent); }
+.card-accent.purple { background: linear-gradient(90deg, var(--purple), transparent); }
+
+.card-inner {
+  padding: 28px;
+}
+
+.card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.card-icon-wrap {
+  width: 52px;
+  height: 52px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  font-size: 22px;
+  color: var(--accent);
+}
+
+.card-status {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.status-live    { background: var(--green-dim); color: var(--green); border: 1px solid rgba(60, 207, 145, 0.25); }
+.status-offline { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(225, 85, 84, 0.25); }
+.status-dev     { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245, 166, 35, 0.25); }
+.status-soon    { background: rgba(157, 78, 221, 0.1); color: var(--purple); border: 1px solid rgba(157, 78, 221, 0.2); }
+
+.card-id {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.card-name {
+  font-family: var(--head);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.card-desc {
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 22px;
+  letter-spacing: 0.02em;
+}
+
+.card-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.meta-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.meta-value {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 500;
+}
+
+.meta-value.ok     { color: var(--green); }
+.meta-value.warn   { color: var(--amber); }
+.meta-value.offline{ color: var(--red); }
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.card-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 16px;
+}
+
+.card-launch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  text-transform: uppercase;
+  transition: gap 0.3s;
+}
+
+.project-card:hover .card-launch { gap: 14px; }
+
+.launch-arrow {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: all 0.3s;
+}
+
+.project-card:hover .launch-arrow {
+  background: var(--accent);
+  color: var(--void);
+}
+
+/*  "Coming soon" card  */
+.card-placeholder {
+  position: relative;
+  background: var(--deep);
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  gap: 14px;
+  cursor: default;
+  transition: all 0.3s;
+}
+
+.card-placeholder:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.placeholder-icon {
+  width: 48px;
+  height: 48px;
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  font-family: var(--mono);
+  font-size: 20px;
+  transition: all 0.3s;
+}
+
+.card-placeholder:hover .placeholder-icon {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.placeholder-text {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/*  Telemetry ticker  */
+.ticker {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  margin: 30px 0 30px;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  height: 40px;
+  opacity: 0;
+  animation: fade-up 0.5s 1.2s forwards;
+}
+
+.ticker-label {
+  flex-shrink: 0;
+  background: var(--accent-dim);
+  border-right: 1px solid var(--border2);
+  padding: 0 16px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  text-transform: uppercase;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.ticker-scroll {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+}
+
+.ticker-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  animation: ticker 35s linear infinite;
+  gap: 50px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+}
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.ticker-item { display: flex; align-items: center; gap: 8px; }
+.ticker-item .t-key { color: var(--text3); font-weight: 500; }
+.ticker-item .t-val { color: var(--accent); }
+.ticker-sep { color: var(--border3); }
+
+/*  Scroll hint  */
+@media (max-width: 768px) {
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+  .topbar {
+    padding: 0 16px;
+  }
+  .topbar-center {
+    display: none;
+  }
+  .main {
+    padding: 80px 16px 50px;
+  }
+  .hero-title {
+    font-size: 32px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<!-- Top bar -->
+<header class="topbar">
+  <a href="projects-hub.html" class="logo">
+    <i class="fas fa-hexagon logo-icon"></i>
+    <div class="logo-text-group">
+      <div class="logo-text">KEMO</div>
+      <div class="logo-sub">Control Room v2.0</div>
+    </div>
+  </a>
+
+  <div class="topbar-center">
+    <div class="sys-indicator">
+      <div class="sys-dot"></div>
+      <span>SYS NOMINAL</span>
+    </div>
+    <div class="sys-indicator">
+      <div class="sys-dot amber"></div>
+      <span>NET ACTIVE</span>
+    </div>
+    <div class="sys-indicator">
+      <div class="sys-dot"></div>
+      <span>1 PROJECT LIVE</span>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <div>SESSION <span style="color:var(--green);font-weight:600" id="session-id"></span></div>
+    <div class="clock" id="clock"><i class="far fa-clock" style="margin-right:6px;font-size:12px"></i>00:00:00</div>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">Unified Operations Dashboard</div>
+    <div class="hero-title"><span class="accent">Control</span> Room</div>
+    <div class="hero-sub">Select a project to enter its control environment</div>
+    <div class="hero-line"></div>
+  </div>
+
+  <!-- Telemetry ticker -->
+  <div class="ticker">
+    <div class="ticker-label"><i class="fas fa-satellite-dish" style="margin-right:6px"></i>Telemetry</div>
+    <div class="ticker-scroll">
+      <div class="ticker-inner" id="ticker-inner">
+        <!-- populated by JS twice for seamless loop -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Projects section -->
+  <div class="section-header">
+    <div class="section-label"><i class="fas fa-folder-tree" style="margin-right:6px"></i>Active Projects</div>
+    <div class="section-line"></div>
+    <div class="section-count" id="project-count">01 / 06</div>
+  </div>
+
+  <div class="projects-grid">
+
+    <!--  HEXAPOD  -->
+    <a class="project-card" href="projects-hub.html">
+      <div class="card-accent"></div>
+      <div class="card-inner">
+        <div class="card-header-row">
+          <div class="card-icon-wrap">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="card-status status-live"><i class="fas fa-circle" style="font-size:6px;margin-right:4px"></i>Live</div>
+        </div>
+        <div class="card-id">PRJ-001 // ROBOTICS</div>
+        <div class="card-name">Hexapod Robot</div>
+        <div class="card-desc">6-DOF hexapod walking robot. Full servo control, real-time telemetry, gait programming, pose management, and OTA firmware updates via WebSocket.</div>
+        <div class="card-meta">
+          <div class="meta-item">
+            <span class="meta-label">Platform</span>
+            <span class="meta-value">ESP32</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Servos</span>
+            <span class="meta-value ok">18 Active</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Protocol</span>
+            <span class="meta-value">WebSocket</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Connection</span>
+            <span class="meta-value warn" id="hx-conn">Offline</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="card-tags">
+            <span class="tag">ESP32</span>
+            <span class="tag">PCA9685</span>
+            <span class="tag">18-DOF</span>
+            <span class="tag">OTA</span>
+          </div>
+          <div class="card-launch">
+            Enter
+            <div class="launch-arrow"><i class="fas fa-arrow-right"></i></div>
+          </div>
+        </div>
+      </div>
+    </a>
+
+    <!--  SLOT 2: placeholder  -->
+    <div class="card-placeholder">
+      <div class="placeholder-icon"><i class="fas fa-plus"></i></div>
+      <div class="placeholder-text">Slot Available</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.08em;text-align:center">Next project deploys here</div>
+    </div>
+
+    <!--  SLOT 3: placeholder  -->
+    <div class="card-placeholder">
+      <div class="placeholder-icon"><i class="fas fa-plus"></i></div>
+      <div class="placeholder-text">Slot Available</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.08em;text-align:center">Next project deploys here</div>
+    </div>
+
+    <!--  SLOT 4: placeholder  -->
+    <div class="card-placeholder">
+      <div class="placeholder-icon"><i class="fas fa-plus"></i></div>
+      <div class="placeholder-text">Slot Available</div>
+    </div>
+
+    <!--  SLOT 5: placeholder  -->
+    <div class="card-placeholder">
+      <div class="placeholder-icon"><i class="fas fa-plus"></i></div>
+      <div class="placeholder-text">Slot Available</div>
+    </div>
+
+    <!--  SLOT 6: placeholder  -->
+    <div class="card-placeholder">
+      <div class="placeholder-icon"><i class="fas fa-plus"></i></div>
+      <div class="placeholder-text">Slot Available</div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Status bar -->
+<footer class="statusbar">
+  <div class="sb-item"><div class="sb-dot ok"></div><span>System Online</span></div>
+  <div class="sb-item"><div class="sb-dot ok"></div><span>Network Active</span></div>
+  <div class="sb-item"><span>Build:</span> <span style="color:var(--text)">2025.06.01</span></div>
+  <div class="sb-item"><span>Node:</span> <span id="node-id" style="color:var(--accent)">CTRL-01</span></div>
+  <div style="margin-left:auto;display:flex;gap:24px">
+    <div class="sb-item"><span>RAM:</span> <span id="ram-usage" style="color:var(--text)"></span></div>
+    <div class="sb-item"><span>Uptime:</span> <span id="uptime" style="color:var(--accent)">00:00:00</span></div>
+  </div>
+</footer>
+
+<script>
+/*  Clock & Session  */
+const startTime = Date.now();
+const sessionId = Math.random().toString(36).substr(2,6).toUpperCase();
+document.getElementById('session-id').textContent = sessionId;
+document.getElementById('node-id').textContent = 'CTRL-' + sessionId.substr(0,2);
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').innerHTML = '<i class="far fa-clock" style="margin-right:6px;font-size:12px"></i>' +
+    pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+
+  const elapsed = Date.now() - startTime;
+  const s = Math.floor(elapsed/1000) % 60;
+  const m = Math.floor(elapsed/60000) % 60;
+  const h = Math.floor(elapsed/3600000);
+  document.getElementById('uptime').textContent = pad(h)+':'+pad(m)+':'+pad(s);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/*  RAM simulation  */
+function updateRAM() {
+  const ram = (Math.random() * 8 + 22).toFixed(1);
+  document.getElementById('ram-usage').textContent = ram + '%';
+}
+setInterval(updateRAM, 3000);
+updateRAM();
+
+/*  Ticker  */
+const tickerItems = [
+  { key: 'HX-001', val: 'HEXAPOD // SERVO_CNT=18' },
+  { key: 'NET',    val: 'WS_ENDPOINT=ws://192.168.x.x/ws' },
+  { key: 'MOTION', val: 'RAMP_INTERVAL=20ms' },
+  { key: 'OTA',    val: 'READY // PORT=3232' },
+  { key: 'SYS',    val: 'ESP32 DUAL-CORE // 240MHz' },
+  { key: 'MEM',    val: 'HEAP=280KB FREE' },
+  { key: 'PRJCTS', val: 'TOTAL=1 ACTIVE / 5 AVAILABLE' },
+  { key: 'CTRL',   val: 'STATION=ONLINE // BUILD=2025.06' },
+];
+
+function buildTicker() {
+  const items = [...tickerItems, ...tickerItems].map(t =>
+    `<span class="ticker-item"><span class="t-key">${t.key}:</span><span class="t-val">${t.val}</span></span><span class="ticker-sep"> - </span>`
+  ).join('');
+  document.getElementById('ticker-inner').innerHTML = items;
+}
+buildTicker();
+
+/*  Probe Hexapod ESP32  */
+function probeHexapod() {
+  const el = document.getElementById('hx-conn');
+  const storedIP = localStorage.getItem('hx-ip') || '192.168.1.42';
+  
+  try {
+    const ws = new WebSocket('ws://' + storedIP + '/ws');
+    
+    ws.onopen = () => {
+      el.textContent = 'Online';
+      el.className = 'meta-value ok';
+      // Update the status indicator in the card
+      const statusEl = document.querySelector('.project-card .card-status');
+      if (statusEl) {
+        statusEl.className = 'card-status status-live';
+        statusEl.innerHTML = '<i class="fas fa-circle" style="font-size:6px;margin-right:4px"></i>Live';
+      }
+      ws.close();
+    };
+    
+    ws.onerror = () => {
+      el.textContent = 'Offline';
+      el.className = 'meta-value offline';
+    };
+    
+    setTimeout(() => { 
+      if(ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CLOSED) {
+        ws.close(); 
+      }
+    }, 3000);
+  } catch(e) {
+    el.textContent = 'Offline';
+    el.className = 'meta-value offline';
+  }
+}
+
+// Probe on load with a slight delay
+setTimeout(probeHexapod, 1500);
+
+// Allow manual refresh of connection status
+document.addEventListener('DOMContentLoaded', () => {
+  const hexapodCard = document.querySelector('.project-card');
+  if (hexapodCard) {
+    hexapodCard.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      probeHexapod();
+    });
+  }
+});
+</script>
+</body>
+</html>
+

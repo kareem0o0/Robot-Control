@@ -1,0 +1,710 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
+  <title>Hexabot  -  Bot Viewer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+      }
+    }
+  </script>
+  <script src="hexabot_v2_glb_bundle.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep: #0a1219;
+      --bg-card: #101b24;
+      --bg-input: #15222e;
+      --border: #1e2f3c;
+      --accent: #3ccf91;
+      --accent-glow: rgba(60, 207, 145, 0.3);
+      --text: #e3f0f5;
+      --muted: #7f95a8;
+      --info: #4fc3f7;
+      --warning: #f5a623;
+      --danger: #e15554;
+      --radius: 16px;
+      --transition: 0.2s ease;
+    }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .dashboard {
+      width: 100%;
+      max-width: 1400px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .mast {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 60px;
+      padding: 1rem 2rem;
+      box-shadow: 0 10px 25px -10px rgba(0,0,0,0.6);
+    }
+
+    .logo-area,
+    .mast-actions,
+    .status-badge,
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+
+    .logo-area {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      color: var(--accent);
+      font-size: 2.1rem;
+      filter: drop-shadow(0 0 8px var(--accent-glow));
+    }
+
+    .logo-text {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff, #b0d9f5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .product-badge,
+    .status-badge,
+    .back-dashboard {
+      border-radius: 30px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .product-badge {
+      background: #1a2c3b;
+      border: 1px solid #2e4b62;
+      color: #b6e2ff;
+      padding: 0.4rem 1.1rem;
+    }
+
+    .status-badge {
+      background: rgba(60, 207, 145, 0.15);
+      border: 1px solid rgba(60, 207, 145, 0.3);
+      color: #b0f0d0;
+      padding: 0.5rem 1.2rem;
+    }
+
+    .back-dashboard {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #1b2f3c;
+      border: 1px solid #2a4457;
+      color: var(--text);
+      padding: 0.5rem 1.2rem;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .back-dashboard:hover,
+    .btn:hover {
+      background: #254a5e;
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .viewer-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 1.5rem;
+      min-height: 720px;
+    }
+
+    .viewer-card,
+    .side-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+
+    .viewer-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 720px;
+    }
+
+    #viewer {
+      width: 100%;
+      height: 100%;
+      min-height: 720px;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(60,207,145,0.08), transparent 30%),
+        linear-gradient(135deg, #071017, #0d1924);
+    }
+
+    .viewer-overlay {
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      right: 1rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      pointer-events: none;
+    }
+
+    .model-title,
+    .hint {
+      background: rgba(7, 16, 23, 0.78);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 0.8rem 1rem;
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    }
+
+    .model-title h1 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .model-title p,
+    .hint {
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .side-card {
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      height: fit-content;
+    }
+
+    .side-card h3 {
+      color: #cbe5ff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.05rem;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+      background: #1b2f3c;
+      border: 1px solid #2a4457;
+      border-radius: 12px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      transition: var(--transition);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .info-list {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .info-item {
+      background: #0e1e2b;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 0.75rem;
+    }
+
+    .info-label {
+      color: var(--muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+      color: #fff;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .theme-toast {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      z-index: 1000;
+      max-width: min(460px, calc(100vw - 3rem));
+      background: rgba(16, 27, 36, 0.96);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.45);
+      color: var(--text);
+      display: none;
+      gap: 0.8rem;
+      padding: 1rem 1.1rem;
+      align-items: flex-start;
+      backdrop-filter: blur(10px);
+    }
+
+    .theme-toast.show {
+      display: flex;
+      animation: toast-in 0.2s ease;
+    }
+
+    .theme-toast i {
+      color: var(--accent);
+      margin-top: 0.1rem;
+    }
+
+    .theme-toast-title {
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .theme-toast-message {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 960px) {
+      .viewer-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .viewer-card,
+      #viewer {
+        min-height: 560px;
+      }
+
+      .mast {
+        align-items: stretch;
+        border-radius: var(--radius);
+        flex-direction: column;
+      }
+
+      .mast-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .back-dashboard,
+      .status-badge {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard">
+  <header class="mast">
+    <div class="logo-area">
+      <i class="fas fa-cube logo-icon"></i>
+      <span class="logo-text">Bot Viewer</span>
+      <span class="product-badge" id="model-type-badge"><i class="fas fa-drafting-compass"></i> GLB Model</span>
+    </div>
+    <div class="mast-actions">
+      <a class="back-dashboard" href="main-dashboard.html">
+        <i class="fas fa-arrow-left"></i> Full Dashboard
+      </a>
+      <div class="status-badge">
+        <i class="fas fa-cube"></i> hexabot_v2.glb
+      </div>
+    </div>
+  </header>
+
+  <main class="viewer-layout">
+    <section class="viewer-card">
+      <div id="viewer"></div>
+      <div class="viewer-overlay">
+        <div class="model-title">
+          <h1>Hexabot V2 Model</h1>
+          <p>Drag to orbit - Scroll to zoom - Right-drag to pan</p>
+        </div>
+        <div class="hint" id="load-status">Loading model...</div>
+      </div>
+    </section>
+
+    <aside class="side-card">
+      <h3><i class="fas fa-sliders-h"></i> Viewer Controls</h3>
+      <button class="btn" id="load-main-model"><i class="fas fa-robot"></i> View Main Hexabot</button>
+      <button class="btn" id="fit-view"><i class="fas fa-expand"></i> Fit Model</button>
+      <button class="btn" id="toggle-wireframe"><i class="fas fa-project-diagram"></i> Toggle Wireframe</button>
+      <button class="btn" id="load-local"><i class="fas fa-folder-open"></i> Load GLB File</button>
+      <button class="btn" id="load-stl"><i class="fas fa-folder-open"></i> Load STL File</button>
+      <input class="file-input" id="glb-input" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" />
+      <input class="file-input" id="stl-input" type="file" accept=".stl,model/stl" />
+
+      <div class="info-list">
+        <div class="info-item">
+          <div class="info-label">Model File</div>
+          <div class="info-value" id="model-file">hexabot_v2.glb</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Triangles</div>
+          <div class="info-value" id="triangles">Waiting...</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Dimensions (m)</div>
+          <div class="info-value" id="dimensions">Waiting...</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="theme-toast" id="theme-toast" role="status" aria-live="polite">
+  <i class="fas fa-info-circle"></i>
+  <div>
+    <div class="theme-toast-title" id="theme-toast-title">Notice</div>
+    <div class="theme-toast-message" id="theme-toast-message"></div>
+  </div>
+</div>
+
+<script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/controls/OrbitControls.js';
+  import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/GLTFLoader.js';
+  import { STLLoader } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/STLLoader.js';
+
+  const MODEL_URL = 'hexabot_v2.glb';
+  const viewer = document.getElementById('viewer');
+  const loadStatus = document.getElementById('load-status');
+  const trianglesEl = document.getElementById('triangles');
+  const dimensionsEl = document.getElementById('dimensions');
+  const modelFileEl = document.getElementById('model-file');
+  const modelTypeBadge = document.getElementById('model-type-badge');
+  const glbInput = document.getElementById('glb-input');
+  const stlInput = document.getElementById('stl-input');
+
+  let toastTimer = null;
+  let currentModel = null;
+  let wireframeEnabled = false;
+
+  const scene = new THREE.Scene();
+  scene.background = null;
+
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100000);
+  camera.position.set(160, 130, 180);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  viewer.appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.screenSpacePanning = true;
+
+  const ambient = new THREE.HemisphereLight(0xdff8ff, 0x16202a, 1.2);
+  scene.add(ambient);
+
+  const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
+  keyLight.position.set(180, 260, 180);
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0x4fc3f7, 0.9);
+  fillLight.position.set(-180, 90, -120);
+  scene.add(fillLight);
+
+  const grid = new THREE.GridHelper(260, 26, 0x315265, 0x1a3340);
+  grid.position.y = -0.01;
+  scene.add(grid);
+
+  function showMessage(title, message) {
+    const toast = document.getElementById('theme-toast');
+    document.getElementById('theme-toast-title').textContent = title;
+    document.getElementById('theme-toast-message').textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 5200);
+  }
+
+  function resizeRenderer() {
+    const rect = viewer.getBoundingClientRect();
+    renderer.setSize(rect.width, rect.height, false);
+    camera.aspect = rect.width / rect.height;
+    camera.updateProjectionMatrix();
+  }
+
+  function fitModel() {
+    if (!currentModel) return;
+
+    const box = new THREE.Box3().setFromObject(currentModel);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const distance = maxDim * 1.8;
+
+    camera.position.set(center.x + distance, center.y + distance * 0.65, center.z + distance);
+    camera.near = Math.max(maxDim / 1000, 0.1);
+    camera.far = maxDim * 100;
+    camera.updateProjectionMatrix();
+
+    controls.target.copy(center);
+    controls.update();
+  }
+
+  function disposeModel(model) {
+    model.traverse(child => {
+      if (child.isMesh) {
+        child.geometry?.dispose();
+        if (Array.isArray(child.material)) {
+          child.material.forEach(material => material.dispose());
+        } else {
+          child.material?.dispose();
+        }
+      }
+    });
+  }
+
+  function countTriangles(model) {
+    let count = 0;
+    model.traverse(child => {
+      if (!child.isMesh || !child.geometry?.attributes?.position) return;
+      const positionCount = child.geometry.attributes.position.count;
+      count += child.geometry.index ? child.geometry.index.count / 3 : positionCount / 3;
+    });
+    return Math.floor(count);
+  }
+
+  function normalizeMaterials(model) {
+    model.traverse(child => {
+      if (!child.isMesh) return;
+      child.castShadow = true;
+      child.receiveShadow = true;
+
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach(material => {
+        if (!material) return;
+        material.wireframe = wireframeEnabled;
+        material.needsUpdate = true;
+      });
+    });
+  }
+
+  function getModelType(fileName, fallback = 'GLB') {
+    const extension = fileName.split('.').pop()?.toUpperCase();
+    if (extension === 'STL') return 'STL';
+    if (extension === 'GLTF') return 'GLTF';
+    if (extension === 'GLB') return 'GLB';
+    return fallback;
+  }
+
+  function updateModelTypeBadge(fileName, fallback) {
+    const type = getModelType(fileName, fallback);
+    modelTypeBadge.innerHTML = `<i class="fas fa-drafting-compass"></i> ${type} Model`;
+  }
+
+  function setModel(model, fileName, fallbackType = 'GLB') {
+    if (currentModel) {
+      scene.remove(currentModel);
+      disposeModel(currentModel);
+    }
+
+    currentModel = model;
+    normalizeMaterials(currentModel);
+
+    const initialBox = new THREE.Box3().setFromObject(currentModel);
+    const center = initialBox.getCenter(new THREE.Vector3());
+    currentModel.position.sub(center);
+    scene.add(currentModel);
+
+    const box = new THREE.Box3().setFromObject(currentModel);
+    const size = box.getSize(new THREE.Vector3());
+    const triangleCount = countTriangles(currentModel);
+
+    modelFileEl.textContent = fileName;
+    updateModelTypeBadge(fileName, fallbackType);
+    trianglesEl.textContent = triangleCount.toLocaleString();
+    dimensionsEl.textContent = `${size.x.toFixed(3)} x ${size.y.toFixed(3)} x ${size.z.toFixed(3)} m`;
+    loadStatus.textContent = 'Model loaded';
+    fitModel();
+  }
+
+  function setStlGeometry(geometry, fileName) {
+    geometry.computeVertexNormals();
+    geometry.center();
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x3ccf91,
+      metalness: 0.25,
+      roughness: 0.55,
+      side: THREE.DoubleSide,
+      wireframe: wireframeEnabled
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = -Math.PI / 2;
+    setModel(mesh, fileName, 'STL');
+  }
+
+  function loadDefaultModel() {
+    if (window.location.protocol === 'file:') {
+      if (window.HEXABOT_V2_GLB_BASE64) {
+        loadStatus.textContent = 'Loading bundled model...';
+        loadBundledModel();
+      } else {
+        loadStatus.textContent = 'Bundled model unavailable';
+        showMessage(
+          'Load GLB File',
+          'The bundled model file is missing. Use Load GLB File or open this page through localhost.'
+        );
+      }
+      return;
+    }
+
+    loadStatus.textContent = 'Loading model...';
+    const loader = new GLTFLoader();
+    loader.load(
+      MODEL_URL,
+      gltf => setModel(gltf.scene, MODEL_URL),
+      event => {
+        if (event.total) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          loadStatus.textContent = `Loading model... ${percent}%`;
+        }
+      },
+      error => {
+        loadStatus.textContent = 'Default load unavailable';
+        showMessage(
+          'Load GLB File',
+          'The browser could not load hexabot_v2.glb automatically. If you opened this page with file://, use Load GLB File or serve the folder from localhost.'
+        );
+        console.error(error);
+      }
+    );
+  }
+
+  function loadBundledModel() {
+    try {
+      const binary = atob(window.HEXABOT_V2_GLB_BASE64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+
+      const loader = new GLTFLoader();
+      loader.parse(
+        bytes.buffer,
+        '',
+        gltf => setModel(gltf.scene, 'hexabot_v2.glb'),
+        error => {
+          loadStatus.textContent = 'Bundled model parse failed';
+          showMessage('Model Error', 'The bundled GLB could not be parsed. Try Load GLB File.');
+          console.error(error);
+        }
+      );
+    } catch (error) {
+      loadStatus.textContent = 'Bundled model load failed';
+      showMessage('Model Error', 'The bundled GLB could not be decoded. Try Load GLB File.');
+      console.error(error);
+    }
+  }
+
+  document.getElementById('fit-view').addEventListener('click', fitModel);
+  document.getElementById('load-main-model').addEventListener('click', loadDefaultModel);
+  document.getElementById('toggle-wireframe').addEventListener('click', () => {
+    if (!currentModel) return;
+    wireframeEnabled = !wireframeEnabled;
+    normalizeMaterials(currentModel);
+  });
+  document.getElementById('load-local').addEventListener('click', () => glbInput.click());
+  document.getElementById('load-stl').addEventListener('click', () => stlInput.click());
+
+  glbInput.addEventListener('change', event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const loader = new GLTFLoader();
+      loader.parse(
+        reader.result,
+        '',
+        gltf => setModel(gltf.scene, file.name),
+        error => {
+          showMessage('File Error', 'Could not parse the selected GLB/GLTF file.');
+          console.error(error);
+        }
+      );
+    };
+    reader.onerror = () => showMessage('File Error', 'Could not read the selected GLB/GLTF file.');
+    reader.readAsArrayBuffer(file);
+  });
+
+  stlInput.addEventListener('change', event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const loader = new STLLoader();
+        const geometry = loader.parse(reader.result);
+        setStlGeometry(geometry, file.name);
+      } catch (error) {
+        showMessage('File Error', 'Could not parse the selected STL file.');
+        console.error(error);
+      }
+    };
+    reader.onerror = () => showMessage('File Error', 'Could not read the selected STL file.');
+    reader.readAsArrayBuffer(file);
+  });
+
+  window.addEventListener('resize', resizeRenderer);
+
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  resizeRenderer();
+  animate();
+  loadDefaultModel();
+</script>
+</body>
+</html>
+
+
+
