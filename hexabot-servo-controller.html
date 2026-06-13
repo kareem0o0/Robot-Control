@@ -178,7 +178,7 @@
       margin-bottom: 0.8rem;
     }
 
-    input, button, .btn {
+    input, select, button, .btn {
       background: var(--bg-input);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
@@ -188,7 +188,7 @@
       outline: none;
       transition: var(--transition);
     }
-    input:focus {
+    input:focus, select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 10px var(--accent-glow);
     }
@@ -361,6 +361,108 @@
       margin-bottom: 0;
     }
 
+    .leg-mover-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .leg-graph-wrap {
+      background: #08131b;
+      border: 1px solid #1f3443;
+      border-radius: var(--radius-sm);
+      min-height: 430px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .leg-graph {
+      display: block;
+      width: 100%;
+      height: 430px;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .leg-graph-grid {
+      stroke: #183040;
+      stroke-width: 1;
+      opacity: 0.7;
+    }
+
+    .leg-graph-axis {
+      stroke: #32566d;
+      stroke-width: 1.5;
+    }
+
+    .leg-link {
+      stroke: var(--accent);
+      stroke-width: 10;
+      stroke-linecap: round;
+      fill: none;
+      filter: drop-shadow(0 0 6px var(--accent-glow));
+    }
+
+    .leg-link.secondary {
+      stroke: var(--info);
+      filter: drop-shadow(0 0 6px rgba(79, 195, 247, 0.25));
+    }
+
+    .leg-joint-dot {
+      fill: #d8f8ff;
+      stroke: #0a1219;
+      stroke-width: 3;
+      cursor: grab;
+      filter: drop-shadow(0 0 6px rgba(216, 248, 255, 0.25));
+    }
+
+    .leg-joint-dot.locked {
+      fill: var(--danger);
+      stroke: #ffb8b8;
+      cursor: pointer;
+      filter: drop-shadow(0 0 8px rgba(225, 85, 84, 0.45));
+    }
+
+    .leg-effector {
+      fill: var(--warning);
+      stroke: #ffe4a1;
+      stroke-width: 3;
+      cursor: grab;
+      filter: drop-shadow(0 0 8px rgba(245, 166, 35, 0.35));
+    }
+
+    .leg-joint-dot:active,
+    .leg-effector:active {
+      cursor: grabbing;
+    }
+
+    .leg-mover-side {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .metric-box {
+      background: #0a141c;
+      border: 1px solid #1f3443;
+      border-radius: var(--radius-sm);
+      padding: 0.8rem;
+    }
+
+    .metric-box label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .metric-value {
+      color: #dff8ff;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
     @media (max-width: 900px) {
       .main-grid {
         grid-template-columns: 1fr;
@@ -380,6 +482,9 @@
         width: 100%;
       }
       .group-control-grid {
+        grid-template-columns: 1fr;
+      }
+      .leg-mover-layout {
         grid-template-columns: 1fr;
       }
       .back-dashboard,
@@ -470,6 +575,54 @@
           </div>
         </div>
         <div class="legs-grid" id="legs-grid"></div>
+        <div class="control-row">
+          <h3 style="margin-bottom: 0.8rem;"><i class="fas fa-draw-polygon"></i> Leg Mover</h3>
+          <div class="leg-mover-layout">
+            <div class="leg-graph-wrap">
+              <svg id="leg-mover-svg" class="leg-graph" viewBox="-70 -20 560 500" role="img" aria-label="Leg mover graph">
+                <defs>
+                  <pattern id="leg-grid" width="26" height="26" patternUnits="userSpaceOnUse">
+                    <path d="M 26 0 L 0 0 0 26" class="leg-graph-grid" />
+                  </pattern>
+                </defs>
+                <rect x="-70" y="-20" width="560" height="500" fill="url(#leg-grid)" />
+                <line id="leg-axis-x" class="leg-graph-axis" x1="-70" y1="220" x2="490" y2="220" />
+                <line id="leg-axis-y" class="leg-graph-axis" x1="180" y1="-20" x2="180" y2="480" />
+                <path id="leg-link-a" class="leg-link" d="" />
+                <path id="leg-link-b" class="leg-link secondary" d="" />
+                <circle id="leg-base-dot" class="leg-joint-dot" cx="180" cy="220" r="7" />
+                <circle id="leg-knee-dot" class="leg-joint-dot" cx="0" cy="0" r="8" />
+                <circle id="leg-effector-dot" class="leg-effector" cx="0" cy="0" r="10" />
+              </svg>
+            </div>
+            <div class="leg-mover-side">
+              <div class="metric-box">
+                <label>Leg</label>
+                <select id="leg-mover-leg" style="width: 100%;">
+                  <option value="1">Leg 1</option>
+                  <option value="2">Leg 2</option>
+                  <option value="3">Leg 3</option>
+                  <option value="4">Leg 4</option>
+                  <option value="5">Leg 5</option>
+                  <option value="6">Leg 6</option>
+                </select>
+              </div>
+              <div class="metric-box">
+                <label>Femur Angle</label>
+                <div id="leg-mover-femur" class="metric-value">90 deg</div>
+              </div>
+              <div class="metric-box">
+                <label>Tibia Angle</label>
+                <div id="leg-mover-tibia" class="metric-value">90 deg</div>
+              </div>
+              <div class="metric-box">
+                <label>End Effector</label>
+                <div id="leg-mover-point" class="metric-value">0, 0</div>
+              </div>
+              <button class="btn" id="leg-mover-reset" style="justify-content: center;"><i class="fas fa-crosshairs"></i> Reset</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Macro Manager -->
@@ -528,6 +681,9 @@
       [1, 4, 7, 10, 13, 16],
       [2, 5, 8, 11, 14, 17]
     ];
+    const LEG_MOVER_FEMUR_HOME_DEG = 90;
+    const LEG_MOVER_TIBIA_HOME_DEG = 90;
+    const REVERSED_SERVOS = new Set([2, 4, 8, 11, 13, 17]);
     let macroFrames = [];
     let ws = null;
     let wsConnected = false;
@@ -550,6 +706,37 @@
     const macroDelayInput = document.getElementById('macro-delay');
     const cmdInput = document.getElementById('cmd-input');
     const sendCmdBtn = document.getElementById('send-cmd-btn');
+    const legMoverSvg = document.getElementById('leg-mover-svg');
+    const legMoverLeg = document.getElementById('leg-mover-leg');
+    const legMoverFemur = document.getElementById('leg-mover-femur');
+    const legMoverTibia = document.getElementById('leg-mover-tibia');
+    const legMoverPoint = document.getElementById('leg-mover-point');
+    const legMoverReset = document.getElementById('leg-mover-reset');
+    const legLinkA = document.getElementById('leg-link-a');
+    const legLinkB = document.getElementById('leg-link-b');
+    const legKneeDot = document.getElementById('leg-knee-dot');
+    const legEffectorDot = document.getElementById('leg-effector-dot');
+    const legBaseDot = document.getElementById('leg-base-dot');
+
+    const legMover = {
+      base: { x: 180, y: 220 },
+      linkA: 95,
+      linkB: 120,
+      knee: { x: 275, y: 220 },
+      target: { x: 395, y: 220 },
+      kneeLocked: false,
+      dragging: false,
+      dragTarget: null,
+      kneePointerId: null,
+      kneePointerStart: null,
+      kneePointerMoved: false,
+      renderQueued: false,
+      sendQueued: false,
+      lastSendMs: 0,
+      sendIntervalMs: 50,
+      pendingSend: false,
+      suppressStatusUntilMs: 0
+    };
 
     // ---------- LOGGING & TERMINAL ----------
     function log(type, msg) {
@@ -593,7 +780,6 @@
         if (onOpen) onOpen();
       };
       ws.onmessage = (event) => {
-        log('log', 'Message: ' + event.data);
         handleStatusMessage(event.data);
         if (onMessage) onMessage(event.data);
       };
@@ -634,7 +820,120 @@
     }
 
     function sendServoAngle(idx, angle) {
-      return wsSend({ command: 'set', idx: idx, servo_id: idx, angle: angle, engage: true });
+      const commandAngle = REVERSED_SERVOS.has(idx) ? 180 - angle : angle;
+      return wsSend({ command: 'set', idx: idx, servo_id: idx, angle: commandAngle, engage: true });
+    }
+
+    function servoAngleToUi(idx, angle) {
+      return REVERSED_SERVOS.has(idx) ? 180 - angle : angle;
+    }
+
+    function getSelectedLegNumber() {
+      return parseInt(legMoverLeg?.value || '1');
+    }
+
+    function getLegServoPair(legNumber = getSelectedLegNumber()) {
+      const baseIdx = (legNumber - 1) * 3;
+      return {
+        femur: baseIdx + 1,
+        tibia: baseIdx + 2
+      };
+    }
+
+    function readServoSliderAngle(idx) {
+      const slider = document.getElementById('sl-' + idx);
+      return slider ? parseInt(slider.value) : 90;
+    }
+
+    function syncLegMoverFromSliders() {
+      if (!legMoverSvg) return;
+      const pair = getLegServoPair();
+      const femurServo = readServoSliderAngle(pair.femur);
+      const tibiaServo = readServoSliderAngle(pair.tibia);
+      const femurGeometryDeg = femurServo - LEG_MOVER_FEMUR_HOME_DEG;
+      const tibiaGeometryDeg = tibiaServo - LEG_MOVER_TIBIA_HOME_DEG;
+      const femurRad = -femurGeometryDeg * Math.PI / 180;
+      const lowerRad = -tibiaGeometryDeg * Math.PI / 180;
+
+      const knee = {
+        x: legMover.base.x + Math.cos(femurRad) * legMover.linkA,
+        y: legMover.base.y + Math.sin(femurRad) * legMover.linkA
+      };
+      const target = {
+        x: knee.x + Math.cos(lowerRad) * legMover.linkB,
+        y: knee.y + Math.sin(lowerRad) * legMover.linkB
+      };
+
+      legMover.knee = knee;
+      legMover.target = target;
+      renderLegMover();
+    }
+
+    function syncSlidersFromLegMover(sendCommands) {
+      const pose = solveLegPreview();
+      const pair = getLegServoPair();
+      const femurAngle = pose.femurDeg;
+      const tibiaAngle = pose.tibiaDeg;
+
+      setServoUi(pair.femur, femurAngle);
+      setServoUi(pair.tibia, tibiaAngle);
+
+      if (sendCommands) {
+        sendServoAngle(pair.femur, femurAngle);
+        sendServoAngle(pair.tibia, tibiaAngle);
+      }
+    }
+
+    function syncSlidersFromLegMoverSilent() {
+      const pose = solveLegPreview();
+      const pair = getLegServoPair();
+      setServoUi(pair.femur, pose.femurDeg);
+      setServoUi(pair.tibia, pose.tibiaDeg);
+    }
+
+    function sendLegMoverServoAngles() {
+      const pose = solveLegPreview();
+      const pair = getLegServoPair();
+      legMover.suppressStatusUntilMs = performance.now() + 350;
+      sendServoAngle(pair.femur, pose.femurDeg);
+      sendServoAngle(pair.tibia, pose.tibiaDeg);
+    }
+
+    function scheduleLegMoverRender() {
+      if (legMover.renderQueued) return;
+      legMover.renderQueued = true;
+      requestAnimationFrame(() => {
+        legMover.renderQueued = false;
+        renderLegMover();
+        syncSlidersFromLegMoverSilent();
+      });
+    }
+
+    function scheduleLegMoverSend(force = false) {
+      const now = performance.now();
+      const elapsed = now - legMover.lastSendMs;
+
+      if (force || elapsed >= legMover.sendIntervalMs) {
+        legMover.pendingSend = false;
+        legMover.lastSendMs = now;
+        sendLegMoverServoAngles();
+        return;
+      }
+
+      if (legMover.sendQueued) {
+        legMover.pendingSend = true;
+        return;
+      }
+
+      legMover.sendQueued = true;
+      legMover.pendingSend = true;
+      setTimeout(() => {
+        legMover.sendQueued = false;
+        if (!legMover.pendingSend) return;
+        legMover.pendingSend = false;
+        legMover.lastSendMs = performance.now();
+        sendLegMoverServoAngles();
+      }, legMover.sendIntervalMs - elapsed);
     }
 
     function handleStatusMessage(raw) {
@@ -646,23 +945,37 @@
       }
 
       if (Array.isArray(data.servos)) {
+        let shouldSyncLegMover = false;
+        const pair = getLegServoPair();
+        const suppressSelectedLegStatus = performance.now() < legMover.suppressStatusUntilMs;
         data.servos.forEach((servo) => {
           const idx = Number(servo.idx);
           if (!Number.isInteger(idx)) return;
 
           const slider = document.getElementById('sl-' + idx);
           const angle = servo.target ?? servo.current;
+          const isSelectedLegMoverServo = idx === pair.femur || idx === pair.tibia;
+          if (suppressSelectedLegStatus && isSelectedLegMoverServo) {
+            return;
+          }
 
           if (angle !== undefined) {
             const activeSuffix = servo.enabled === false ? ' off' : '';
+            const uiAngle = servoAngleToUi(idx, Number(angle));
             if (slider && document.activeElement === slider) {
               const angleSpan = document.getElementById('ang-' + idx);
-              if (angleSpan) angleSpan.textContent = `${Math.round(angle)} deg${activeSuffix}`;
+              if (angleSpan) angleSpan.textContent = `${Math.round(uiAngle)} deg${activeSuffix}`;
             } else {
-              setServoUi(idx, angle, activeSuffix);
+              setServoUi(idx, uiAngle, activeSuffix);
+              if (isSelectedLegMoverServo) {
+                shouldSyncLegMover = true;
+              }
             }
           }
         });
+        if (shouldSyncLegMover && !legMover.dragging) {
+          syncLegMoverFromSliders();
+        }
       }
 
       if (typeof data.globalSpeed === 'number') {
@@ -697,10 +1010,293 @@
       }
     }
 
+    // ---------- LEG MOVER UI MOCK ----------
+    function clampLegTarget(point) {
+      const dx = point.x - legMover.base.x;
+      const dy = point.y - legMover.base.y;
+      const distance = Math.hypot(dx, dy);
+      const maxReach = legMover.linkA + legMover.linkB;
+      const minReach = Math.abs(legMover.linkA - legMover.linkB) + 1;
+      if (distance < 0.001) {
+        return {
+          x: legMover.base.x,
+          y: legMover.base.y - minReach
+        };
+      }
+      const clampedDistance = Math.max(minReach, Math.min(maxReach, distance));
+      const scale = clampedDistance / distance;
+      return {
+        x: legMover.base.x + dx * scale,
+        y: legMover.base.y + dy * scale
+      };
+    }
+
+    function pointAtRadius(origin, point, radius, fallbackAngle = -Math.PI / 2) {
+      const dx = point.x - origin.x;
+      const dy = point.y - origin.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < 0.001) {
+        return {
+          x: origin.x + Math.cos(fallbackAngle) * radius,
+          y: origin.y + Math.sin(fallbackAngle) * radius
+        };
+      }
+      return {
+        x: origin.x + (dx / distance) * radius,
+        y: origin.y + (dy / distance) * radius
+      };
+    }
+
+    function clampServoDisplayAngle(angle) {
+      return Math.max(0, Math.min(180, Math.round(angle)));
+    }
+
+    function getLegServoAngles(knee, target) {
+      const femurRad = Math.atan2(knee.y - legMover.base.y, knee.x - legMover.base.x);
+      const tibiaRad = Math.atan2(target.y - knee.y, target.x - knee.x);
+      const femurGeometryDeg = -(femurRad * 180 / Math.PI);
+      const tibiaGeometryDeg = -(tibiaRad * 180 / Math.PI);
+      return {
+        femur: LEG_MOVER_FEMUR_HOME_DEG + femurGeometryDeg,
+        tibia: LEG_MOVER_TIBIA_HOME_DEG + tibiaGeometryDeg
+      };
+    }
+
+    function isServoLimitedPose(knee, target) {
+      const angles = getLegServoAngles(knee, target);
+      return angles.femur >= 0 && angles.femur <= 180 &&
+             angles.tibia >= 0 && angles.tibia <= 180;
+    }
+
+    function solveKneeForTarget(target, preferredKnee = null) {
+      const dx = target.x - legMover.base.x;
+      const dy = target.y - legMover.base.y;
+      const distance = Math.hypot(dx, dy);
+      const a = legMover.linkA;
+      const b = legMover.linkB;
+
+      const along = (a * a - b * b + distance * distance) / (2 * distance);
+      const height = Math.sqrt(Math.max(0, a * a - along * along));
+      const ux = dx / distance;
+      const uy = dy / distance;
+
+      const candidates = [
+        {
+          x: legMover.base.x + along * ux - height * uy,
+          y: legMover.base.y + along * uy + height * ux
+        },
+        {
+          x: legMover.base.x + along * ux + height * uy,
+          y: legMover.base.y + along * uy - height * ux
+        }
+      ];
+
+      if (!preferredKnee) return candidates[0];
+
+      const d0 = Math.hypot(candidates[0].x - preferredKnee.x, candidates[0].y - preferredKnee.y);
+      const d1 = Math.hypot(candidates[1].x - preferredKnee.x, candidates[1].y - preferredKnee.y);
+      return d0 <= d1 ? candidates[0] : candidates[1];
+    }
+
+    function solveLegPreview() {
+      let target = legMover.target;
+      let knee = legMover.knee;
+
+      if (!knee) {
+        target = clampLegTarget(target);
+        legMover.target = target;
+        knee = solveKneeForTarget(target);
+      } else {
+        knee = pointAtRadius(legMover.base, knee, legMover.linkA);
+        target = pointAtRadius(knee, target, legMover.linkB);
+        legMover.knee = knee;
+        legMover.target = target;
+      }
+
+      const angles = getLegServoAngles(knee, target);
+      const femurDeg = clampServoDisplayAngle(angles.femur);
+      const tibiaDeg = clampServoDisplayAngle(angles.tibia);
+
+      return { knee, target, femurDeg, tibiaDeg };
+    }
+
+    function renderLegMover() {
+      if (!legMoverSvg) return;
+      const pose = solveLegPreview();
+
+      legLinkA.setAttribute('d', `M ${legMover.base.x} ${legMover.base.y} L ${pose.knee.x} ${pose.knee.y}`);
+      legLinkB.setAttribute('d', `M ${pose.knee.x} ${pose.knee.y} L ${pose.target.x} ${pose.target.y}`);
+      legKneeDot.setAttribute('cx', pose.knee.x);
+      legKneeDot.setAttribute('cy', pose.knee.y);
+      legKneeDot.classList.toggle('locked', legMover.kneeLocked);
+      legEffectorDot.setAttribute('cx', pose.target.x);
+      legEffectorDot.setAttribute('cy', pose.target.y);
+      legBaseDot.setAttribute('cx', legMover.base.x);
+      legBaseDot.setAttribute('cy', legMover.base.y);
+      const localX = Math.round(pose.target.x - legMover.base.x);
+      const localY = Math.round(legMover.base.y - pose.target.y);
+      legMoverFemur.textContent = `${pose.femurDeg} deg`;
+      legMoverTibia.textContent = `${pose.tibiaDeg} deg`;
+      legMoverPoint.textContent = `${localX}, ${localY}`;
+    }
+
+    function getSvgPoint(event) {
+      const point = legMoverSvg.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      return point.matrixTransform(legMoverSvg.getScreenCTM().inverse());
+    }
+
+    function moveLegEffector(event) {
+      const point = getSvgPoint(event);
+      if (legMover.dragTarget === 'knee') {
+        if (legMover.kneeLocked) return;
+        const knee = pointAtRadius(legMover.base, point, legMover.linkA);
+        const target = pointAtRadius(knee, legMover.target, legMover.linkB);
+        if (!isServoLimitedPose(knee, target)) return;
+        legMover.knee = knee;
+        legMover.target = target;
+      } else {
+        if (legMover.kneeLocked && legMover.knee) {
+          const target = pointAtRadius(legMover.knee, point, legMover.linkB);
+          if (!isServoLimitedPose(legMover.knee, target)) return;
+          legMover.target = target;
+        } else if (legMover.knee) {
+          const target = clampLegTarget(point);
+          const knee = solveKneeForTarget(target, legMover.knee);
+          if (!isServoLimitedPose(knee, target)) return;
+          legMover.knee = knee;
+          legMover.target = target;
+        } else {
+          const target = clampLegTarget(point);
+          const knee = solveKneeForTarget(target);
+          if (!isServoLimitedPose(knee, target)) return;
+          legMover.target = target;
+        }
+      }
+      scheduleLegMoverRender();
+      scheduleLegMoverSend(false);
+    }
+
+    function setupLegMover() {
+      if (!legMoverSvg) return;
+
+      legMoverSvg.addEventListener('pointerdown', (event) => {
+        if (event.target === legKneeDot || event.target === legBaseDot) {
+          return;
+        }
+        legMover.dragging = true;
+        legMover.dragTarget = event.target === legKneeDot ? 'knee' : 'effector';
+        legMoverSvg.setPointerCapture(event.pointerId);
+        moveLegEffector(event);
+      });
+
+      legKneeDot.addEventListener('pointerdown', (event) => {
+        event.stopPropagation();
+        legMover.kneePointerId = event.pointerId;
+        legMover.kneePointerStart = { x: event.clientX, y: event.clientY };
+        legMover.kneePointerMoved = false;
+        legMover.dragTarget = 'knee';
+        legKneeDot.setPointerCapture(event.pointerId);
+      });
+
+      legKneeDot.addEventListener('pointermove', (event) => {
+        if (legMover.kneePointerId !== event.pointerId) return;
+        event.stopPropagation();
+
+        const dx = event.clientX - legMover.kneePointerStart.x;
+        const dy = event.clientY - legMover.kneePointerStart.y;
+        if (Math.hypot(dx, dy) > 4) {
+          legMover.kneePointerMoved = true;
+        }
+
+        if (!legMover.kneeLocked && legMover.kneePointerMoved) {
+          moveLegEffector(event);
+        }
+      });
+
+      legKneeDot.addEventListener('pointerup', (event) => {
+        if (legMover.kneePointerId !== event.pointerId) return;
+        event.stopPropagation();
+
+        if (!legMover.kneePointerMoved) {
+          legMover.kneeLocked = !legMover.kneeLocked;
+          legMover.knee = {
+            x: Number(legKneeDot.getAttribute('cx')),
+            y: Number(legKneeDot.getAttribute('cy'))
+          };
+          renderLegMover();
+        } else {
+          renderLegMover();
+          syncSlidersFromLegMoverSilent();
+          scheduleLegMoverSend(true);
+        }
+
+        legMover.kneePointerId = null;
+        legMover.kneePointerStart = null;
+        legMover.kneePointerMoved = false;
+        legMover.dragTarget = null;
+        legKneeDot.releasePointerCapture(event.pointerId);
+      });
+
+      legKneeDot.addEventListener('pointercancel', (event) => {
+        event.stopPropagation();
+        legMover.kneePointerId = null;
+        legMover.kneePointerStart = null;
+        legMover.kneePointerMoved = false;
+        legMover.dragTarget = null;
+      });
+
+      legMoverSvg.addEventListener('pointermove', (event) => {
+        if (!legMover.dragging) return;
+        moveLegEffector(event);
+      });
+
+      legMoverSvg.addEventListener('pointerup', (event) => {
+        legMover.dragging = false;
+        legMover.dragTarget = null;
+        legMover.pendingSend = false;
+        renderLegMover();
+        syncSlidersFromLegMoverSilent();
+        scheduleLegMoverSend(true);
+        legMoverSvg.releasePointerCapture(event.pointerId);
+      });
+
+      legMoverSvg.addEventListener('pointercancel', () => {
+        legMover.dragging = false;
+        legMover.dragTarget = null;
+        legMover.pendingSend = false;
+      });
+
+      legMoverReset.addEventListener('click', () => {
+        const kneeX = legMover.base.x + legMover.linkA;
+        const kneeY = legMover.base.y;
+        legMover.kneeLocked = false;
+        legMover.knee = { x: kneeX, y: kneeY };
+        legMover.target = {
+          x: kneeX + legMover.linkB,
+          y: kneeY
+        };
+        renderLegMover();
+        syncSlidersFromLegMover(true);
+      });
+
+      legMoverLeg.addEventListener('change', () => {
+        syncLegMoverFromSliders();
+      });
+
+      renderLegMover();
+      syncSlidersFromLegMover(false);
+    }
+
     // Expose to global scope for inline handlers
     window.onSlider = function(idx, val) {
       const angle = parseInt(val);
       setServoUi(idx, angle);
+      const pair = getLegServoPair();
+      if (idx === pair.femur || idx === pair.tibia) {
+        syncLegMoverFromSliders();
+      }
       if (sendServoAngle(idx, angle)) {
         log('log', `Servo ${idx} -> ${angle} deg`);
       }
@@ -715,6 +1311,10 @@
       let sent = 0;
       group.forEach((idx) => {
         setServoUi(idx, angle);
+        const pair = getLegServoPair();
+        if (idx === pair.femur || idx === pair.tibia) {
+          syncLegMoverFromSliders();
+        }
         if (sendServoAngle(idx, angle)) sent++;
       });
 
@@ -779,6 +1379,7 @@
         if (groupSlider) groupSlider.value = 90;
         if (groupAngle) groupAngle.textContent = '90 deg';
       }
+      syncLegMoverFromSliders();
       wsSend({ command: 'centerAll' });
       log('log', 'Center All command sent');
     };
@@ -840,6 +1441,7 @@
 
     // Initialize grid and UI
     buildLegGrid();
+    setupLegMover();
     updateMacroList();
     updateConnectionUI(false);
     log('log', 'Hexabot dashboard ready. Connect to your ESP.');
@@ -847,4 +1449,3 @@
 </script>
 </body>
 </html>
-
