@@ -855,7 +855,9 @@
       renderQueued: false,
       sendQueued: false,
       lastSendMs: 0,
-      sendIntervalMs: 50,
+      sendIntervalMs: 90,
+      minSendDeltaDeg: 1,
+      lastSentAngles: {},
       pendingSend: false,
       suppressStatusUntilMs: 0
     };
@@ -1037,13 +1039,27 @@
       renderLegMover();
     }
 
-    function sendLegMoverServoAngles() {
+    function sendLegMoverServoAngle(idx, angle, force = false) {
+      const roundedAngle = clampServoDisplayAngle(angle);
+      const previousAngle = legMover.lastSentAngles[idx];
+      if (!force && previousAngle !== undefined && Math.abs(previousAngle - roundedAngle) < legMover.minSendDeltaDeg) {
+        return false;
+      }
+
+      if (sendServoAngle(idx, roundedAngle)) {
+        legMover.lastSentAngles[idx] = roundedAngle;
+        return true;
+      }
+      return false;
+    }
+
+    function sendLegMoverServoAngles(force = false) {
       const pose = solveLegPreview();
       const pair = getLegServoPair();
       legMover.suppressStatusUntilMs = performance.now() + 350;
-      sendServoAngle(pair.coxa, getSelectedCoxaAngle());
-      sendServoAngle(pair.femur, pose.femurDeg);
-      sendServoAngle(pair.tibia, pose.tibiaDeg);
+      sendLegMoverServoAngle(pair.coxa, getSelectedCoxaAngle(), force);
+      sendLegMoverServoAngle(pair.femur, pose.femurDeg, force);
+      sendLegMoverServoAngle(pair.tibia, pose.tibiaDeg, force);
     }
 
     function scheduleLegMoverRender() {
@@ -1063,7 +1079,7 @@
       if (force || elapsed >= legMover.sendIntervalMs) {
         legMover.pendingSend = false;
         legMover.lastSendMs = now;
-        sendLegMoverServoAngles();
+        sendLegMoverServoAngles(force);
         return;
       }
 
@@ -1079,7 +1095,7 @@
         if (!legMover.pendingSend) return;
         legMover.pendingSend = false;
         legMover.lastSendMs = performance.now();
-        sendLegMoverServoAngles();
+        sendLegMoverServoAngles(false);
       }, legMover.sendIntervalMs - elapsed);
     }
 
@@ -1739,10 +1755,13 @@
 
       const localX = Math.round(pose.target.x - legMover.base.x);
       const localY = Math.round(legMover.base.y - pose.target.y);
+      const worldTarget = is3d ? localLegPointToWorld3(pose.target) : null;
       legMoverCoxa.textContent = `${coxaDeg} deg`;
       legMoverFemur.textContent = `${pose.femurDeg} deg`;
       legMoverTibia.textContent = `${pose.tibiaDeg} deg`;
-      legMoverPoint.textContent = `${localX}, ${localY}`;
+      legMoverPoint.textContent = is3d
+        ? `${Math.round(worldTarget.x)}, ${Math.round(worldTarget.y)}, ${Math.round(worldTarget.z)}`
+        : `${localX}, ${localY}`;
     }
 
     function getSvgPoint(event) {
