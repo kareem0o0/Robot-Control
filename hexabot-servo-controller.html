@@ -768,7 +768,7 @@
     ];
     const LEG_MOVER_FEMUR_HOME_DEG = 90;
     const LEG_MOVER_TIBIA_HOME_DEG = 90;
-    const REVERSED_SERVOS = new Set([2, 4, 8, 11, 13, 17]);
+    const REVERSED_SERVOS = new Set([0, 2, 3, 4, 6, 8, 9, 11, 12, 13, 15, 17]);
     let macroFrames = [];
     let ws = null;
     let wsConnected = false;
@@ -846,6 +846,7 @@
       dragging: false,
       dragTarget: null,
       dragPickedJoint: null,
+      dragWorldPlane: null,
       dragPointerStart: null,
       dragPointerMoved: false,
       kneePointerId: null,
@@ -1016,7 +1017,7 @@
     function syncSlidersFromLegMoverSilent() {
       const pose = solveLegPreview();
       const pair = getLegServoPair();
-      setServoUi(pair.coxa, readServoSliderAngle(pair.coxa));
+      setServoUi(pair.coxa, getSelectedCoxaAngle());
       setServoUi(pair.femur, pose.femurDeg);
       setServoUi(pair.tibia, pose.tibiaDeg);
     }
@@ -1279,6 +1280,41 @@
 
       const yawDeg = Math.atan2(hit.z, hit.x) * 180 / Math.PI;
       return clampServoDisplayAngle(yawDeg + 90);
+    }
+
+    function startFree3dEffectorDrag() {
+      if (!legMover.three) return;
+      const currentTarget = localLegPointToWorld3(legMover.target);
+      const cameraDirection = new THREE.Vector3();
+      legMover.three.camera.getWorldDirection(cameraDirection);
+      legMover.dragWorldPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(cameraDirection, currentTarget);
+    }
+
+    function free3dTargetFromPointer(event) {
+      if (!legMover.three || !legMover.dragWorldPlane) return null;
+      const pointer = get3dPointerInfo(event);
+      if (!pointer) return null;
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(pointer.mouse, legMover.three.camera);
+      const hit = new THREE.Vector3();
+      if (!raycaster.ray.intersectPlane(legMover.dragWorldPlane, hit)) return null;
+
+      let yawRad = Math.atan2(hit.z, hit.x);
+      let coxaAngle = clampServoDisplayAngle(yawRad * 180 / Math.PI + 90);
+      if (legMover.coxaLocked && legMover.lockedCoxaAngle !== null) {
+        coxaAngle = legMover.lockedCoxaAngle;
+      }
+      yawRad = (coxaAngle - 90) * Math.PI / 180;
+
+      const radialForward = hit.x * Math.cos(yawRad) + hit.z * Math.sin(yawRad);
+      const localTarget = {
+        x: legMover.base.x + radialForward - legMover.coxaLength,
+        y: legMover.base.y - hit.y
+      };
+
+      setCoxaFromLegMover(coxaAngle, false);
+      return localTarget;
     }
 
     function createJointMesh(color, radius) {
@@ -1718,6 +1754,9 @@
 
     function getLegEditPoint(event) {
       if (!legMover.is3d) return getSvgPoint(event);
+      if (legMover.dragTarget === 'effector') {
+        return free3dTargetFromPointer(event) || legMover.target;
+      }
       return localLegPlaneFromPointer(event) || (legMover.dragTarget === 'knee' ? legMover.knee : legMover.target);
     }
 
@@ -1988,6 +2027,7 @@
         legMover.viewCaptureTarget = null;
         legMover.dragging = false;
         legMover.dragTarget = null;
+        legMover.dragWorldPlane = null;
         legMover.dragPointerStart = null;
         legMover.dragPointerMoved = false;
         legMover.pendingSend = false;
@@ -2015,6 +2055,9 @@
           : pickedJoint === 'knee'
             ? 'knee'
             : 'effector';
+        if (legMover.dragTarget === 'effector') {
+          startFree3dEffectorDrag();
+        }
         legMover.dragPointerStart = { x: event.clientX, y: event.clientY };
         legMover.dragPointerMoved = false;
         legMover3dView.setPointerCapture(event.pointerId);
@@ -2049,6 +2092,7 @@
         legMover.dragging = false;
         legMover.dragTarget = null;
         legMover.dragPickedJoint = null;
+        legMover.dragWorldPlane = null;
         legMover.dragPointerStart = null;
         legMover.dragPointerMoved = false;
         legMover.pendingSend = false;
@@ -2059,6 +2103,7 @@
         legMover.dragging = false;
         legMover.dragTarget = null;
         legMover.dragPickedJoint = null;
+        legMover.dragWorldPlane = null;
         legMover.dragPointerStart = null;
         legMover.dragPointerMoved = false;
         legMover.pendingSend = false;
