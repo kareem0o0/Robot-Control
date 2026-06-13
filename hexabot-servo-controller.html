@@ -385,6 +385,51 @@
       cursor: crosshair;
     }
 
+    .leg-graph.hidden {
+      display: none;
+    }
+
+    .leg-graph.is-3d {
+      cursor: crosshair;
+    }
+
+    .leg-3d-view {
+      display: none;
+      width: 100%;
+      height: 430px;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .leg-3d-view.visible {
+      display: block;
+    }
+
+    .leg-view-tools {
+      display: none;
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      gap: 0.35rem;
+      z-index: 2;
+      background: rgba(8, 19, 27, 0.82);
+      border: 1px solid #1f3443;
+      border-radius: var(--radius-sm);
+      padding: 0.35rem;
+      backdrop-filter: blur(6px);
+    }
+
+    .leg-view-tools.visible {
+      display: flex;
+    }
+
+    .leg-view-tools button {
+      width: 34px;
+      height: 34px;
+      justify-content: center;
+      padding: 0;
+    }
+
     .leg-graph-grid {
       stroke: #183040;
       stroke-width: 1;
@@ -412,6 +457,15 @@
     .leg-link.tertiary {
       stroke: var(--warning);
       filter: drop-shadow(0 0 6px rgba(245, 166, 35, 0.25));
+    }
+
+    .leg-link.coxa {
+      stroke: #b68cff;
+      filter: drop-shadow(0 0 6px rgba(182, 140, 255, 0.25));
+    }
+
+    .leg-hidden {
+      display: none;
     }
 
     .leg-joint-dot {
@@ -584,6 +638,16 @@
           <h3 style="margin-bottom: 0.8rem;"><i class="fas fa-draw-polygon"></i> Leg Mover</h3>
           <div class="leg-mover-layout">
             <div class="leg-graph-wrap">
+              <div id="leg-view-tools" class="leg-view-tools" aria-label="3D view controls">
+                <button type="button" id="leg-view-left" title="Rotate view left"><i class="fas fa-arrow-left"></i></button>
+                <button type="button" id="leg-view-right" title="Rotate view right"><i class="fas fa-arrow-right"></i></button>
+                <button type="button" id="leg-view-up" title="Tilt view up"><i class="fas fa-arrow-up"></i></button>
+                <button type="button" id="leg-view-down" title="Tilt view down"><i class="fas fa-arrow-down"></i></button>
+                <button type="button" id="leg-view-zoom-in" title="Zoom in"><i class="fas fa-search-plus"></i></button>
+                <button type="button" id="leg-view-zoom-out" title="Zoom out"><i class="fas fa-search-minus"></i></button>
+                <button type="button" id="leg-view-reset" title="Reset view"><i class="fas fa-sync-alt"></i></button>
+              </div>
+              <div id="leg-mover-3d-view" class="leg-3d-view"></div>
               <svg id="leg-mover-svg" class="leg-graph" viewBox="-70 -20 560 500" role="img" aria-label="Leg mover graph">
                 <defs>
                   <pattern id="leg-grid" width="26" height="26" patternUnits="userSpaceOnUse">
@@ -593,9 +657,11 @@
                 <rect x="-70" y="-20" width="560" height="500" fill="url(#leg-grid)" />
                 <line id="leg-axis-x" class="leg-graph-axis" x1="-70" y1="220" x2="490" y2="220" />
                 <line id="leg-axis-y" class="leg-graph-axis" x1="180" y1="-20" x2="180" y2="480" />
+                <path id="leg-link-coxa" class="leg-link coxa leg-hidden" d="" />
                 <path id="leg-link-a" class="leg-link" d="" />
                 <path id="leg-link-b" class="leg-link secondary" d="" />
                 <path id="leg-link-c" class="leg-link tertiary" d="" />
+                <circle id="leg-root-dot" class="leg-joint-dot leg-hidden" cx="0" cy="0" r="7" />
                 <circle id="leg-base-dot" class="leg-joint-dot" cx="180" cy="220" r="7" />
                 <circle id="leg-knee-dot" class="leg-joint-dot" cx="0" cy="0" r="8" />
                 <circle id="leg-ankle-dot" class="leg-joint-dot" cx="0" cy="0" r="6" />
@@ -615,8 +681,18 @@
                 </select>
               </div>
               <div class="metric-box">
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
+                  <input id="leg-mover-3d" type="checkbox" style="width: auto;">
+                  3D
+                </label>
+              </div>
+              <div class="metric-box">
                 <label>Femur Angle</label>
                 <div id="leg-mover-femur" class="metric-value">90 deg</div>
+              </div>
+              <div class="metric-box">
+                <label>Coxa Angle</label>
+                <div id="leg-mover-coxa" class="metric-value">90 deg</div>
               </div>
               <div class="metric-box">
                 <label>Tibia Angle</label>
@@ -678,6 +754,8 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
   (function() {
     // ---------- CONSTANTS & STATE ----------
@@ -714,32 +792,62 @@
     const cmdInput = document.getElementById('cmd-input');
     const sendCmdBtn = document.getElementById('send-cmd-btn');
     const legMoverSvg = document.getElementById('leg-mover-svg');
+    const legMover3dView = document.getElementById('leg-mover-3d-view');
     const legMoverLeg = document.getElementById('leg-mover-leg');
+    const legMover3d = document.getElementById('leg-mover-3d');
+    const legViewTools = document.getElementById('leg-view-tools');
+    const legViewLeft = document.getElementById('leg-view-left');
+    const legViewRight = document.getElementById('leg-view-right');
+    const legViewUp = document.getElementById('leg-view-up');
+    const legViewDown = document.getElementById('leg-view-down');
+    const legViewZoomIn = document.getElementById('leg-view-zoom-in');
+    const legViewZoomOut = document.getElementById('leg-view-zoom-out');
+    const legViewReset = document.getElementById('leg-view-reset');
+    const legMoverCoxa = document.getElementById('leg-mover-coxa');
     const legMoverFemur = document.getElementById('leg-mover-femur');
     const legMoverTibia = document.getElementById('leg-mover-tibia');
     const legMoverPoint = document.getElementById('leg-mover-point');
     const legMoverReset = document.getElementById('leg-mover-reset');
+    const legLinkCoxa = document.getElementById('leg-link-coxa');
     const legLinkA = document.getElementById('leg-link-a');
     const legLinkB = document.getElementById('leg-link-b');
     const legLinkC = document.getElementById('leg-link-c');
     const legKneeDot = document.getElementById('leg-knee-dot');
     const legAnkleDot = document.getElementById('leg-ankle-dot');
     const legEffectorDot = document.getElementById('leg-effector-dot');
+    const legRootDot = document.getElementById('leg-root-dot');
     const legBaseDot = document.getElementById('leg-base-dot');
 
     const legMover = {
       base: { x: 180, y: 220 },
+      originBase: { x: 180, y: 220 },
+      coxaLength: 75,
+      is3d: false,
       linkA: 95,
       linkB: 74.5,
       linkC: 95,
       knee: { x: 275, y: 220 },
       target: { x: 349.5, y: 315 },
+      viewYaw: -35,
+      viewPitch: 24,
+      viewScale: 1,
+      viewDragging: false,
+      viewPointerStart: null,
+      viewCaptureTarget: null,
+      viewStartYaw: -35,
+      viewStartPitch: 24,
+      three: null,
+      coxaLocked: false,
+      lockedCoxaAngle: null,
       baseLocked: false,
       lockedFemurRad: null,
       kneeLocked: false,
       lockedTibiaRad: null,
       dragging: false,
       dragTarget: null,
+      dragPickedJoint: null,
+      dragPointerStart: null,
+      dragPointerMoved: false,
       kneePointerId: null,
       kneePointerStart: null,
       kneePointerMoved: false,
@@ -848,6 +956,7 @@
     function getLegServoPair(legNumber = getSelectedLegNumber()) {
       const baseIdx = (legNumber - 1) * 3;
       return {
+        coxa: baseIdx,
         femur: baseIdx + 1,
         tibia: baseIdx + 2
       };
@@ -890,9 +999,11 @@
     function syncSlidersFromLegMover(sendCommands) {
       const pose = solveLegPreview();
       const pair = getLegServoPair();
+      const coxaAngle = readServoSliderAngle(pair.coxa);
       const femurAngle = pose.femurDeg;
       const tibiaAngle = pose.tibiaDeg;
 
+      setServoUi(pair.coxa, coxaAngle);
       setServoUi(pair.femur, femurAngle);
       setServoUi(pair.tibia, tibiaAngle);
 
@@ -905,14 +1016,31 @@
     function syncSlidersFromLegMoverSilent() {
       const pose = solveLegPreview();
       const pair = getLegServoPair();
+      setServoUi(pair.coxa, readServoSliderAngle(pair.coxa));
       setServoUi(pair.femur, pose.femurDeg);
       setServoUi(pair.tibia, pose.tibiaDeg);
+    }
+
+    function setCoxaFromLegMover(angle, sendCommand = false) {
+      const pair = getLegServoPair();
+      const clampedAngle = clampServoDisplayAngle(angle);
+      if (legMover.coxaLocked && legMover.lockedCoxaAngle !== null) {
+        setServoUi(pair.coxa, legMover.lockedCoxaAngle);
+        return;
+      }
+
+      setServoUi(pair.coxa, clampedAngle);
+      if (sendCommand) {
+        sendServoAngle(pair.coxa, clampedAngle);
+      }
+      renderLegMover();
     }
 
     function sendLegMoverServoAngles() {
       const pose = solveLegPreview();
       const pair = getLegServoPair();
       legMover.suppressStatusUntilMs = performance.now() + 350;
+      sendServoAngle(pair.coxa, getSelectedCoxaAngle());
       sendServoAngle(pair.femur, pose.femurDeg);
       sendServoAngle(pair.tibia, pose.tibiaDeg);
     }
@@ -972,7 +1100,7 @@
 
           const slider = document.getElementById('sl-' + idx);
           const angle = servo.target ?? servo.current;
-          const isSelectedLegMoverServo = idx === pair.femur || idx === pair.tibia;
+          const isSelectedLegMoverServo = idx === pair.coxa || idx === pair.femur || idx === pair.tibia;
           if (suppressSelectedLegStatus && isSelectedLegMoverServo) {
             return;
           }
@@ -1079,6 +1207,352 @@
         x: legMover.base.x + Math.cos(femurRad) * legMover.linkA,
         y: legMover.base.y + Math.sin(femurRad) * legMover.linkA
       };
+    }
+
+    function getCoxaRoot() {
+      return {
+        x: legMover.originBase.x,
+        y: legMover.originBase.y
+      };
+    }
+
+    function getSelectedCoxaAngle() {
+      if (legMover.coxaLocked && legMover.lockedCoxaAngle !== null) {
+        return legMover.lockedCoxaAngle;
+      }
+      return readServoSliderAngle(getLegServoPair().coxa);
+    }
+
+    function getSelectedCoxaYawRad() {
+      return (getSelectedCoxaAngle() - 90) * Math.PI / 180;
+    }
+
+    function localLegPointToWorld3(point) {
+      const yaw = getSelectedCoxaYawRad();
+      const localForward = point.x - legMover.base.x;
+      const localDown = point.y - legMover.base.y;
+      const forward = legMover.coxaLength + localForward;
+
+      return new THREE.Vector3(
+        Math.cos(yaw) * forward,
+        -localDown,
+        Math.sin(yaw) * forward
+      );
+    }
+
+    function localLegPlaneFromPointer(event) {
+      if (!legMover.three) return null;
+      const rect = legMover3dView.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, legMover.three.camera);
+
+      const yaw = getSelectedCoxaYawRad();
+      const normal = new THREE.Vector3(-Math.sin(yaw), 0, Math.cos(yaw));
+      const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, new THREE.Vector3(0, 0, 0));
+      const hit = new THREE.Vector3();
+      if (!raycaster.ray.intersectPlane(plane, hit)) return null;
+
+      const forward = hit.x * Math.cos(yaw) + hit.z * Math.sin(yaw);
+      return {
+        x: legMover.base.x + forward - legMover.coxaLength,
+        y: legMover.base.y - hit.y
+      };
+    }
+
+    function coxaAngleFromPointer(event) {
+      if (!legMover.three) return null;
+      const pointer = get3dPointerInfo(event);
+      if (!pointer) return null;
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(pointer.mouse, legMover.three.camera);
+      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const hit = new THREE.Vector3();
+      if (!raycaster.ray.intersectPlane(groundPlane, hit)) return null;
+
+      const distance = Math.hypot(hit.x, hit.z);
+      if (distance < 0.001) return getSelectedCoxaAngle();
+
+      const yawDeg = Math.atan2(hit.z, hit.x) * 180 / Math.PI;
+      return clampServoDisplayAngle(yawDeg + 90);
+    }
+
+    function createJointMesh(color, radius) {
+      const geometry = new THREE.SphereGeometry(radius, 24, 16);
+      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.15 });
+      return new THREE.Mesh(geometry, material);
+    }
+
+    function createLinkMesh(color) {
+      const geometry = new THREE.CylinderGeometry(4, 4, 1, 24);
+      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.42, metalness: 0.18 });
+      return new THREE.Mesh(geometry, material);
+    }
+
+    function updateLinkMesh(mesh, start, end) {
+      const direction = new THREE.Vector3().subVectors(end, start);
+      const length = direction.length();
+      const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+      mesh.position.copy(midpoint);
+      mesh.scale.set(1, length, 1);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+    }
+
+    function ensureLeg3dScene() {
+      if (legMover.three || !legMover3dView || !window.THREE || !THREE.OrbitControls) return;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x08131b);
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+      camera.position.set(230, 180, 260);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(legMover3dView.clientWidth || 600, legMover3dView.clientHeight || 430);
+      legMover3dView.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.set(120, -40, 0);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.mouseButtons = {
+        LEFT: null,
+        MIDDLE: THREE.MOUSE.ROTATE,
+        RIGHT: THREE.MOUSE.PAN
+      };
+      controls.touches = {
+        ONE: null,
+        TWO: THREE.TOUCH.DOLLY_PAN
+      };
+      controls.addEventListener('change', () => {
+        renderer.render(scene, camera);
+      });
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+      const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      keyLight.position.set(180, 240, 160);
+      scene.add(keyLight);
+
+      const grid = new THREE.GridHelper(420, 14, 0x32566d, 0x183040);
+      grid.position.y = 0;
+      scene.add(grid);
+
+      const axes = new THREE.AxesHelper(120);
+      scene.add(axes);
+
+      const links = {
+        coxa: createLinkMesh(0xb68cff),
+        femur: createLinkMesh(0x3ccf91),
+        tibia: createLinkMesh(0x4fc3f7),
+        foot: createLinkMesh(0xf5a623)
+      };
+      Object.values(links).forEach((link) => scene.add(link));
+
+      const joints = {
+        root: createJointMesh(0xd8f8ff, 8),
+        base: createJointMesh(0xd8f8ff, 8),
+        knee: createJointMesh(0xd8f8ff, 8),
+        ankle: createJointMesh(0xd8f8ff, 6),
+        effector: createJointMesh(0xf5a623, 10)
+      };
+      Object.values(joints).forEach((joint) => scene.add(joint));
+
+      legMover.three = { scene, camera, renderer, controls, links, joints };
+      window.addEventListener('resize', resizeLeg3dScene);
+    }
+
+    function resizeLeg3dScene() {
+      if (!legMover.three || !legMover3dView) return;
+      const width = legMover3dView.clientWidth || 600;
+      const height = legMover3dView.clientHeight || 430;
+      legMover.three.camera.aspect = width / height;
+      legMover.three.camera.updateProjectionMatrix();
+      legMover.three.renderer.setSize(width, height);
+    }
+
+    function renderLeg3dScene(pose, ankle) {
+      ensureLeg3dScene();
+      if (!legMover.three) return;
+      resizeLeg3dScene();
+
+      const root = new THREE.Vector3(0, 0, 0);
+      const base = localLegPointToWorld3(legMover.base);
+      const knee = localLegPointToWorld3(pose.knee);
+      const anklePoint = localLegPointToWorld3(ankle);
+      const target = localLegPointToWorld3(pose.target);
+      const { links, joints } = legMover.three;
+
+      updateLinkMesh(links.coxa, root, base);
+      updateLinkMesh(links.femur, base, knee);
+      updateLinkMesh(links.tibia, knee, anklePoint);
+      updateLinkMesh(links.foot, anklePoint, target);
+
+      joints.root.position.copy(root);
+      joints.base.position.copy(base);
+      joints.knee.position.copy(knee);
+      joints.ankle.position.copy(anklePoint);
+      joints.effector.position.copy(target);
+      joints.root.material.color.set(legMover.coxaLocked ? 0xe15554 : 0xd8f8ff);
+      joints.base.material.color.set(legMover.baseLocked ? 0xe15554 : 0xd8f8ff);
+      joints.knee.material.color.set(legMover.kneeLocked ? 0xe15554 : 0xd8f8ff);
+
+      legMover.three.controls.update();
+      legMover.three.renderer.render(legMover.three.scene, legMover.three.camera);
+    }
+
+    function localLegPointToWorld(point) {
+      const yaw = getSelectedCoxaYawRad();
+      const forwardX = Math.cos(yaw);
+      const forwardZ = Math.sin(yaw);
+      const localForward = point.x - legMover.base.x;
+      const localDown = point.y - legMover.base.y;
+
+      return {
+        x: Math.cos(yaw) * legMover.coxaLength + forwardX * localForward,
+        y: localDown,
+        z: Math.sin(yaw) * legMover.coxaLength + forwardZ * localForward
+      };
+    }
+
+    function projectWorldPoint(point) {
+      const yaw = legMover.viewYaw * Math.PI / 180;
+      const pitch = legMover.viewPitch * Math.PI / 180;
+      const cosYaw = Math.cos(yaw);
+      const sinYaw = Math.sin(yaw);
+      const cosPitch = Math.cos(pitch);
+      const sinPitch = Math.sin(pitch);
+
+      const x1 = point.x * cosYaw - point.z * sinYaw;
+      const z1 = point.x * sinYaw + point.z * cosYaw;
+      const y1 = point.y;
+      const y2 = y1 * cosPitch - z1 * sinPitch;
+
+      return {
+        x: legMover.originBase.x + x1 * legMover.viewScale,
+        y: legMover.originBase.y + y2 * legMover.viewScale
+      };
+    }
+
+    function getLegMoverProjectedPose(pose, ankle) {
+      const root = projectWorldPoint({ x: 0, y: 0, z: 0 });
+      const base = projectWorldPoint(localLegPointToWorld(legMover.base));
+      const knee = projectWorldPoint(localLegPointToWorld(pose.knee));
+      const anklePoint = projectWorldPoint(localLegPointToWorld(ankle));
+      const target = projectWorldPoint(localLegPointToWorld(pose.target));
+
+      return { root, base, knee, ankle: anklePoint, target };
+    }
+
+    function projectLocalLegPoint(point) {
+      return projectWorldPoint(localLegPointToWorld(point));
+    }
+
+    function projectedPointToLocalLeg(svgPoint) {
+      const baseScreen = projectLocalLegPoint(legMover.base);
+      const forwardScreen = projectLocalLegPoint({ x: legMover.base.x + 1, y: legMover.base.y });
+      const downScreen = projectLocalLegPoint({ x: legMover.base.x, y: legMover.base.y + 1 });
+      const fx = forwardScreen.x - baseScreen.x;
+      const fy = forwardScreen.y - baseScreen.y;
+      const dx = downScreen.x - baseScreen.x;
+      const dy = downScreen.y - baseScreen.y;
+      const px = svgPoint.x - baseScreen.x;
+      const py = svgPoint.y - baseScreen.y;
+      const det = fx * dy - fy * dx;
+
+      if (Math.abs(det) < 0.0001) {
+        return {
+          x: legMover.base.x + px,
+          y: legMover.base.y + py
+        };
+      }
+
+      return {
+        x: legMover.base.x + (px * dy - py * dx) / det,
+        y: legMover.base.y + (fx * py - fy * px) / det
+      };
+    }
+
+    function setLegPath(path, start, end) {
+      path.setAttribute('d', `M ${start.x} ${start.y} L ${end.x} ${end.y}`);
+    }
+
+    function setLegMover3d(enabled) {
+      if (legMover.is3d === enabled) return;
+
+      const oldBase = { ...legMover.base };
+      legMover.is3d = enabled;
+      legMover.base = {
+        x: legMover.originBase.x + (enabled ? legMover.coxaLength : 0),
+        y: legMover.originBase.y
+      };
+
+      const dx = legMover.base.x - oldBase.x;
+      const dy = legMover.base.y - oldBase.y;
+      legMover.knee = {
+        x: legMover.knee.x + dx,
+        y: legMover.knee.y + dy
+      };
+      legMover.target = {
+        x: legMover.target.x + dx,
+        y: legMover.target.y + dy
+      };
+    }
+
+    function adjustLegView({ yaw = 0, pitch = 0, zoom = 1, reset = false }) {
+      if (legMover.is3d && legMover.three) {
+        const { camera, controls } = legMover.three;
+        if (reset) {
+          camera.position.set(230, 180, 260);
+          controls.target.set(120, -40, 0);
+        } else {
+          const offset = camera.position.clone().sub(controls.target);
+          const spherical = new THREE.Spherical().setFromVector3(offset);
+          spherical.theta += yaw * Math.PI / 180;
+          spherical.phi = Math.max(0.2, Math.min(Math.PI - 0.2, spherical.phi - pitch * Math.PI / 180));
+          spherical.radius = Math.max(80, Math.min(700, spherical.radius / zoom));
+          camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+        }
+        controls.update();
+        renderLegMover();
+        return;
+      }
+
+      if (reset) {
+        legMover.viewYaw = -35;
+        legMover.viewPitch = 24;
+        legMover.viewScale = 1;
+      } else {
+        legMover.viewYaw += yaw;
+        legMover.viewPitch = Math.max(-70, Math.min(70, legMover.viewPitch + pitch));
+        legMover.viewScale = Math.max(0.65, Math.min(1.75, legMover.viewScale * zoom));
+      }
+      renderLegMover();
+    }
+
+    function startLegViewDrag(event) {
+      event.preventDefault();
+      legMover.viewDragging = true;
+      legMover.viewPointerStart = { x: event.clientX, y: event.clientY };
+      legMover.viewStartYaw = legMover.viewYaw;
+      legMover.viewStartPitch = legMover.viewPitch;
+      legMover.viewCaptureTarget = event.currentTarget;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    function finishLegViewDrag(event) {
+      if (legMover.viewCaptureTarget) {
+        try {
+          legMover.viewCaptureTarget.releasePointerCapture(event.pointerId);
+        } catch (e) {
+          // Pointer capture may already be released by the browser.
+        }
+      }
+      legMover.viewDragging = false;
+      legMover.viewPointerStart = null;
+      legMover.viewCaptureTarget = null;
     }
 
     function targetFromKneeAndTibia(knee, tibiaRad) {
@@ -1188,22 +1662,48 @@
       const pose = solveLegPreview();
       const tibiaRad = getTibiaRadians(pose.knee, pose.target);
       const ankle = ankleFromKneeAndTibia(pose.knee, tibiaRad);
+      const coxaDeg = getSelectedCoxaAngle();
+      const is3d = legMover.is3d;
+      legMoverSvg.classList.toggle('hidden', is3d);
+      legMover3dView?.classList.toggle('visible', is3d);
+      legViewTools?.classList.toggle('visible', is3d);
 
-      legLinkA.setAttribute('d', `M ${legMover.base.x} ${legMover.base.y} L ${pose.knee.x} ${pose.knee.y}`);
-      legLinkB.setAttribute('d', `M ${pose.knee.x} ${pose.knee.y} L ${ankle.x} ${ankle.y}`);
-      legLinkC.setAttribute('d', `M ${ankle.x} ${ankle.y} L ${pose.target.x} ${pose.target.y}`);
-      legKneeDot.setAttribute('cx', pose.knee.x);
-      legKneeDot.setAttribute('cy', pose.knee.y);
-      legKneeDot.classList.toggle('locked', legMover.kneeLocked);
-      legAnkleDot.setAttribute('cx', ankle.x);
-      legAnkleDot.setAttribute('cy', ankle.y);
-      legEffectorDot.setAttribute('cx', pose.target.x);
-      legEffectorDot.setAttribute('cy', pose.target.y);
-      legBaseDot.setAttribute('cx', legMover.base.x);
-      legBaseDot.setAttribute('cy', legMover.base.y);
-      legBaseDot.classList.toggle('locked', legMover.baseLocked);
+      if (is3d) {
+        renderLeg3dScene(pose, ankle);
+      } else {
+        const screenPose = {
+          root: getCoxaRoot(),
+          base: legMover.base,
+          knee: pose.knee,
+          ankle,
+          target: pose.target
+        };
+
+        setLegPath(legLinkA, screenPose.base, screenPose.knee);
+        setLegPath(legLinkB, screenPose.knee, screenPose.ankle);
+        setLegPath(legLinkC, screenPose.ankle, screenPose.target);
+        legKneeDot.setAttribute('cx', screenPose.knee.x);
+        legKneeDot.setAttribute('cy', screenPose.knee.y);
+        legKneeDot.classList.toggle('locked', legMover.kneeLocked);
+        legAnkleDot.setAttribute('cx', screenPose.ankle.x);
+        legAnkleDot.setAttribute('cy', screenPose.ankle.y);
+        legEffectorDot.setAttribute('cx', screenPose.target.x);
+        legEffectorDot.setAttribute('cy', screenPose.target.y);
+        legBaseDot.setAttribute('cx', screenPose.base.x);
+        legBaseDot.setAttribute('cy', screenPose.base.y);
+        legBaseDot.classList.toggle('locked', legMover.baseLocked);
+
+        setLegPath(legLinkCoxa, screenPose.root, screenPose.base);
+        legRootDot.setAttribute('cx', screenPose.root.x);
+        legRootDot.setAttribute('cy', screenPose.root.y);
+        legRootDot.classList.toggle('locked', legMover.coxaLocked);
+        legLinkCoxa.classList.add('leg-hidden');
+        legRootDot.classList.add('leg-hidden');
+      }
+
       const localX = Math.round(pose.target.x - legMover.base.x);
       const localY = Math.round(legMover.base.y - pose.target.y);
+      legMoverCoxa.textContent = `${coxaDeg} deg`;
       legMoverFemur.textContent = `${pose.femurDeg} deg`;
       legMoverTibia.textContent = `${pose.tibiaDeg} deg`;
       legMoverPoint.textContent = `${localX}, ${localY}`;
@@ -1216,8 +1716,61 @@
       return point.matrixTransform(legMoverSvg.getScreenCTM().inverse());
     }
 
+    function getLegEditPoint(event) {
+      if (!legMover.is3d) return getSvgPoint(event);
+      return localLegPlaneFromPointer(event) || (legMover.dragTarget === 'knee' ? legMover.knee : legMover.target);
+    }
+
+    function get3dPointerInfo(event) {
+      if (!legMover.three || !legMover3dView) return null;
+      const rect = legMover3dView.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      return { mouse, rect };
+    }
+
+    function pickLeg3dJoint(event) {
+      const pointer = get3dPointerInfo(event);
+      if (!pointer || !legMover.three) return null;
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(pointer.mouse, legMover.three.camera);
+      const entries = [
+        { name: 'root', mesh: legMover.three.joints.root },
+        { name: 'base', mesh: legMover.three.joints.base },
+        { name: 'knee', mesh: legMover.three.joints.knee },
+        { name: 'effector', mesh: legMover.three.joints.effector }
+      ];
+      const hits = raycaster.intersectObjects(entries.map((entry) => entry.mesh), false);
+      if (!hits.length) return null;
+      return entries.find((entry) => entry.mesh === hits[0].object)?.name || null;
+    }
+
+    function toggleLeg3dJointLock(jointName) {
+      if (jointName === 'root') {
+        legMover.coxaLocked = !legMover.coxaLocked;
+        legMover.lockedCoxaAngle = legMover.coxaLocked ? getSelectedCoxaAngle() : null;
+      } else if (jointName === 'base') {
+        legMover.baseLocked = !legMover.baseLocked;
+        legMover.lockedFemurRad = legMover.baseLocked ? getFemurRadians(legMover.knee) : null;
+      } else if (jointName === 'knee') {
+        legMover.kneeLocked = !legMover.kneeLocked;
+        legMover.lockedTibiaRad = legMover.kneeLocked ? getTibiaRadians(legMover.knee, legMover.target) : null;
+      }
+      renderLegMover();
+    }
+
     function moveLegEffector(event) {
-      const point = getSvgPoint(event);
+      if (legMover.dragTarget === 'coxa') {
+        const angle = coxaAngleFromPointer(event);
+        if (angle === null) return;
+        setCoxaFromLegMover(angle, false);
+        scheduleLegMoverSend(false);
+        return;
+      }
+
+      const point = getLegEditPoint(event);
       if (legMover.dragTarget === 'knee') {
         const knee = legMover.baseLocked && legMover.lockedFemurRad !== null
           ? kneeFromFemur(legMover.lockedFemurRad)
@@ -1276,17 +1829,26 @@
       if (!legMoverSvg) return;
 
       legMoverSvg.addEventListener('pointerdown', (event) => {
+        if (legMover.is3d && event.button === 1) {
+          startLegViewDrag(event);
+          return;
+        }
         if (event.target === legKneeDot || event.target === legBaseDot) {
           return;
         }
         legMover.dragging = true;
         legMover.dragTarget = event.target === legKneeDot ? 'knee' : 'effector';
+        legMover.dragPointerStart = { x: event.clientX, y: event.clientY };
+        legMover.dragPointerMoved = false;
         legMoverSvg.setPointerCapture(event.pointerId);
-        moveLegEffector(event);
       });
 
       legKneeDot.addEventListener('pointerdown', (event) => {
         event.stopPropagation();
+        if (legMover.is3d && event.button === 1) {
+          startLegViewDrag(event);
+          return;
+        }
         legMover.kneePointerId = event.pointerId;
         legMover.kneePointerStart = { x: event.clientX, y: event.clientY };
         legMover.kneePointerMoved = false;
@@ -1315,10 +1877,6 @@
 
         if (!legMover.kneePointerMoved) {
           legMover.kneeLocked = !legMover.kneeLocked;
-          legMover.knee = {
-            x: Number(legKneeDot.getAttribute('cx')),
-            y: Number(legKneeDot.getAttribute('cy'))
-          };
           legMover.lockedTibiaRad = legMover.kneeLocked
             ? getTibiaRadians(legMover.knee, legMover.target)
             : null;
@@ -1346,10 +1904,17 @@
 
       legBaseDot.addEventListener('pointerdown', (event) => {
         event.stopPropagation();
+        if (legMover.is3d && event.button === 1) {
+          startLegViewDrag(event);
+        }
       });
 
       legBaseDot.addEventListener('pointerup', (event) => {
         event.stopPropagation();
+        if (legMover.viewDragging) {
+          finishLegViewDrag(event);
+          return;
+        }
         legMover.baseLocked = !legMover.baseLocked;
         legMover.lockedFemurRad = legMover.baseLocked
           ? getFemurRadians(legMover.knee)
@@ -1357,30 +1922,153 @@
         renderLegMover();
       });
 
+      legRootDot.addEventListener('pointerdown', (event) => {
+        event.stopPropagation();
+        if (!legMover.is3d) return;
+        if (event.button === 1) {
+          startLegViewDrag(event);
+        }
+      });
+
+      legRootDot.addEventListener('pointerup', (event) => {
+        event.stopPropagation();
+        if (!legMover.is3d) return;
+        if (legMover.viewDragging) {
+          finishLegViewDrag(event);
+          return;
+        }
+        legMover.coxaLocked = !legMover.coxaLocked;
+        legMover.lockedCoxaAngle = legMover.coxaLocked ? getSelectedCoxaAngle() : null;
+        renderLegMover();
+      });
+
       legMoverSvg.addEventListener('pointermove', (event) => {
+        if (legMover.is3d && legMover.viewDragging && legMover.viewPointerStart) {
+          const dx = event.clientX - legMover.viewPointerStart.x;
+          const dy = event.clientY - legMover.viewPointerStart.y;
+          legMover.viewYaw = legMover.viewStartYaw + dx * 0.35;
+          legMover.viewPitch = Math.max(-70, Math.min(70, legMover.viewStartPitch + dy * 0.25));
+          renderLegMover();
+          return;
+        }
         if (!legMover.dragging) return;
+        if (legMover.dragPointerStart) {
+          const dx = event.clientX - legMover.dragPointerStart.x;
+          const dy = event.clientY - legMover.dragPointerStart.y;
+          if (Math.hypot(dx, dy) > 3) {
+            legMover.dragPointerMoved = true;
+          }
+          if (!legMover.dragPointerMoved) return;
+        }
         moveLegEffector(event);
       });
 
       legMoverSvg.addEventListener('pointerup', (event) => {
+        if (legMover.is3d && legMover.viewDragging) {
+          finishLegViewDrag(event);
+          return;
+        }
+        const movedDuringDrag = legMover.dragPointerMoved;
         legMover.dragging = false;
         legMover.dragTarget = null;
+        legMover.dragPointerStart = null;
+        legMover.dragPointerMoved = false;
         legMover.pendingSend = false;
         renderLegMover();
         syncSlidersFromLegMoverSilent();
-        scheduleLegMoverSend(true);
+        if (movedDuringDrag) {
+          scheduleLegMoverSend(true);
+        }
         legMoverSvg.releasePointerCapture(event.pointerId);
       });
 
       legMoverSvg.addEventListener('pointercancel', () => {
+        legMover.viewDragging = false;
+        legMover.viewPointerStart = null;
+        legMover.viewCaptureTarget = null;
         legMover.dragging = false;
         legMover.dragTarget = null;
+        legMover.dragPointerStart = null;
+        legMover.dragPointerMoved = false;
+        legMover.pendingSend = false;
+      });
+
+      legMoverSvg.addEventListener('wheel', (event) => {
+        if (!legMover.is3d) return;
+        event.preventDefault();
+        adjustLegView({ zoom: event.deltaY < 0 ? 1.08 : 0.93 });
+      }, { passive: false });
+
+      legMoverSvg.addEventListener('auxclick', (event) => {
+        if (legMover.is3d && event.button === 1) {
+          event.preventDefault();
+        }
+      });
+
+      legMover3dView?.addEventListener('pointerdown', (event) => {
+        if (!legMover.is3d || event.button !== 0) return;
+        const pickedJoint = pickLeg3dJoint(event);
+        legMover.dragging = true;
+        legMover.dragPickedJoint = pickedJoint;
+        legMover.dragTarget = pickedJoint === 'base'
+          ? 'coxa'
+          : pickedJoint === 'knee'
+            ? 'knee'
+            : 'effector';
+        legMover.dragPointerStart = { x: event.clientX, y: event.clientY };
+        legMover.dragPointerMoved = false;
+        legMover3dView.setPointerCapture(event.pointerId);
+      });
+
+      legMover3dView?.addEventListener('pointermove', (event) => {
+        if (!legMover.is3d || !legMover.dragging) return;
+        if (legMover.dragPointerStart) {
+          const dx = event.clientX - legMover.dragPointerStart.x;
+          const dy = event.clientY - legMover.dragPointerStart.y;
+          if (Math.hypot(dx, dy) > 3) {
+            legMover.dragPointerMoved = true;
+          }
+          if (!legMover.dragPointerMoved) return;
+        }
+        moveLegEffector(event);
+      });
+
+      legMover3dView?.addEventListener('pointerup', (event) => {
+        if (!legMover.is3d || event.button !== 0) return;
+        const movedDuringDrag = legMover.dragPointerMoved;
+        const pickedJoint = legMover.dragPickedJoint;
+
+        if (!movedDuringDrag && (pickedJoint === 'root' || pickedJoint === 'base' || pickedJoint === 'knee')) {
+          toggleLeg3dJointLock(pickedJoint);
+        } else if (movedDuringDrag) {
+          renderLegMover();
+          syncSlidersFromLegMoverSilent();
+          scheduleLegMoverSend(true);
+        }
+
+        legMover.dragging = false;
+        legMover.dragTarget = null;
+        legMover.dragPickedJoint = null;
+        legMover.dragPointerStart = null;
+        legMover.dragPointerMoved = false;
+        legMover.pendingSend = false;
+        legMover3dView.releasePointerCapture(event.pointerId);
+      });
+
+      legMover3dView?.addEventListener('pointercancel', () => {
+        legMover.dragging = false;
+        legMover.dragTarget = null;
+        legMover.dragPickedJoint = null;
+        legMover.dragPointerStart = null;
+        legMover.dragPointerMoved = false;
         legMover.pendingSend = false;
       });
 
       legMoverReset.addEventListener('click', () => {
         const kneeX = legMover.base.x + legMover.linkA;
         const kneeY = legMover.base.y;
+        legMover.coxaLocked = false;
+        legMover.lockedCoxaAngle = null;
         legMover.baseLocked = false;
         legMover.lockedFemurRad = null;
         legMover.kneeLocked = false;
@@ -1395,6 +2083,19 @@
         syncLegMoverFromSliders();
       });
 
+      legMover3d.addEventListener('change', () => {
+        setLegMover3d(legMover3d.checked);
+        renderLegMover();
+      });
+
+      legViewLeft?.addEventListener('click', () => adjustLegView({ yaw: -12 }));
+      legViewRight?.addEventListener('click', () => adjustLegView({ yaw: 12 }));
+      legViewUp?.addEventListener('click', () => adjustLegView({ pitch: 8 }));
+      legViewDown?.addEventListener('click', () => adjustLegView({ pitch: -8 }));
+      legViewZoomIn?.addEventListener('click', () => adjustLegView({ zoom: 1.12 }));
+      legViewZoomOut?.addEventListener('click', () => adjustLegView({ zoom: 0.9 }));
+      legViewReset?.addEventListener('click', () => adjustLegView({ reset: true }));
+
       renderLegMover();
       syncSlidersFromLegMover(false);
     }
@@ -1402,9 +2103,15 @@
     // Expose to global scope for inline handlers
     window.onSlider = function(idx, val) {
       const angle = parseInt(val);
-      setServoUi(idx, angle);
       const pair = getLegServoPair();
-      if (idx === pair.femur || idx === pair.tibia) {
+      if (idx === pair.coxa && legMover.coxaLocked && legMover.lockedCoxaAngle !== null) {
+        setServoUi(idx, legMover.lockedCoxaAngle);
+        renderLegMover();
+        return;
+      }
+
+      setServoUi(idx, angle);
+      if (idx === pair.coxa || idx === pair.femur || idx === pair.tibia) {
         syncLegMoverFromSliders();
       }
       if (sendServoAngle(idx, angle)) {
@@ -1420,9 +2127,15 @@
 
       let sent = 0;
       group.forEach((idx) => {
-        setServoUi(idx, angle);
         const pair = getLegServoPair();
-        if (idx === pair.femur || idx === pair.tibia) {
+        if (idx === pair.coxa && legMover.coxaLocked && legMover.lockedCoxaAngle !== null) {
+          setServoUi(idx, legMover.lockedCoxaAngle);
+          renderLegMover();
+          return;
+        }
+
+        setServoUi(idx, angle);
+        if (idx === pair.coxa || idx === pair.femur || idx === pair.tibia) {
           syncLegMoverFromSliders();
         }
         if (sendServoAngle(idx, angle)) sent++;
