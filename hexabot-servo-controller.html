@@ -318,7 +318,7 @@
       left: 50%;
       top: 50%;
       width: 3px;
-      height: 48px;
+      height: var(--stick-distance, 0px);
       border-radius: 999px;
       background: linear-gradient(var(--accent), rgba(60, 207, 145, 0.16));
       transform: translate(-50%, -100%) rotate(var(--direction-rotation, 0deg));
@@ -337,7 +337,7 @@
       border: 2px solid rgba(216, 248, 255, 0.76);
       background: var(--accent);
       box-shadow: 0 0 16px var(--accent-glow);
-      transform: translate(calc(-50% + var(--knob-x, 0px)), calc(-50% + var(--knob-y, -52px)));
+      transform: translate(calc(-50% + var(--knob-x, 0px)), calc(-50% + var(--knob-y, 0px)));
       pointer-events: none;
     }
 
@@ -870,27 +870,28 @@
                 <span id="gait-direction-knob" class="analog-direction-knob"></span>
               </div>
               <input id="gait-direction" type="hidden" min="-180" max="180" value="0">
+              <input id="gait-direction-power" type="hidden" min="0" max="100" value="0">
             </div>
             <div class="group-control">
               <div class="group-control-header">
                 <span>Stride</span>
-                <span id="gait-stride-value" class="angle-badge">45 mm</span>
+                <span id="gait-stride-value" class="angle-badge">130 mm</span>
               </div>
-              <input id="gait-stride" type="range" min="5" max="150" value="45" class="slider">
+              <input id="gait-stride" type="range" min="5" max="150" value="130" class="slider">
             </div>
             <div class="group-control">
               <div class="group-control-header">
                 <span>Lift</span>
-                <span id="gait-lift-value" class="angle-badge">28 mm</span>
+                <span id="gait-lift-value" class="angle-badge">40 mm</span>
               </div>
-              <input id="gait-lift" type="range" min="0" max="70" value="28" class="slider">
+              <input id="gait-lift" type="range" min="0" max="70" value="40" class="slider">
             </div>
             <div class="group-control">
               <div class="group-control-header">
                 <span>Speed</span>
-                <span id="gait-speed-value" class="angle-badge">1.2 s</span>
+                <span id="gait-speed-value" class="angle-badge">2.0 s</span>
               </div>
-              <input id="gait-speed" type="range" min="400" max="3000" value="1200" class="slider">
+              <input id="gait-speed" type="range" min="400" max="3000" value="2000" class="slider">
             </div>
           </div>
         </div>
@@ -1044,6 +1045,7 @@
     const gaitPhase = document.getElementById('gait-phase');
     const gaitPhaseValue = document.getElementById('gait-phase-value');
     const gaitDirection = document.getElementById('gait-direction');
+    const gaitDirectionPower = document.getElementById('gait-direction-power');
     const gaitDirectionValue = document.getElementById('gait-direction-value');
     const gaitDirectionPad = document.getElementById('gait-direction-pad');
     const gaitDirectionKnob = document.getElementById('gait-direction-knob');
@@ -2051,11 +2053,13 @@
     }
 
     function getGaitPreviewOptions() {
+      const power = Number(gaitDirectionPower?.value || 0) / 100;
+      const requestedStride = Number(gaitStride?.value || 130);
       return {
         directionDeg: Number(gaitDirection?.value || 0),
-        strideLength: Number(gaitStride?.value || 45),
-        liftHeight: Number(gaitLift?.value || 28),
-        durationMs: Number(gaitSpeed?.value || 1200)
+        strideLength: Math.max(0, requestedStride * power),
+        liftHeight: Number(gaitLift?.value || 40),
+        durationMs: Number(gaitSpeed?.value || 2000)
       };
     }
 
@@ -2069,44 +2073,60 @@
     function renderGaitDirectionPad() {
       if (!gaitDirectionPad) return;
       const angle = clampGaitDirection(gaitDirection?.value || 0);
+      const power = Math.max(0, Math.min(100, Number(gaitDirectionPower?.value || 0))) / 100;
       const radians = angle * Math.PI / 180;
       const radius = 52;
       gaitDirectionPad.style.setProperty('--direction-rotation', `${angle}deg`);
-      gaitDirectionPad.style.setProperty('--knob-x', `${Math.sin(radians) * radius}px`);
-      gaitDirectionPad.style.setProperty('--knob-y', `${-Math.cos(radians) * radius}px`);
+      gaitDirectionPad.style.setProperty('--knob-x', `${Math.sin(radians) * radius * power}px`);
+      gaitDirectionPad.style.setProperty('--knob-y', `${-Math.cos(radians) * radius * power}px`);
+      gaitDirectionPad.style.setProperty('--stick-distance', `${radius * power}px`);
       gaitDirectionPad.setAttribute('aria-valuenow', String(angle));
-      gaitDirectionPad.setAttribute('aria-valuetext', `${angle} degrees`);
+      gaitDirectionPad.setAttribute('aria-valuetext', `${angle} degrees, ${Math.round(power * 100)} percent`);
       if (gaitDirection && gaitDirection.value !== String(angle)) {
         gaitDirection.value = String(angle);
       }
     }
 
-    function setGaitDirection(angle, emitInput = true) {
+    function setGaitDirection(angle, power = Number(gaitDirectionPower?.value || 0), emitInput = true) {
       if (!gaitDirection) return;
-      gaitDirection.value = String(clampGaitDirection(angle));
+      const normalizedPower = Math.max(0, Math.min(100, Math.round(Number(power) || 0)));
+      gaitDirection.value = String(normalizedPower > 0 ? clampGaitDirection(angle) : 0);
+      if (gaitDirectionPower) gaitDirectionPower.value = String(normalizedPower);
       renderGaitDirectionPad();
       if (emitInput) {
         gaitDirection.dispatchEvent(new Event('input', { bubbles: true }));
       }
     }
 
-    function gaitDirectionFromPointer(event) {
-      if (!gaitDirectionPad) return 0;
+    function gaitDirectionStateFromPointer(event) {
+      if (!gaitDirectionPad) return { angle: 0, power: 0 };
       const rect = gaitDirectionPad.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const dx = event.clientX - centerX;
       const dy = event.clientY - centerY;
-      if (Math.hypot(dx, dy) < 8) return 0;
-      return Math.atan2(dx, -dy) * 180 / Math.PI;
+      const maxRadius = Math.max(1, Math.min(rect.width, rect.height) / 2 - 26);
+      const distance = Math.min(maxRadius, Math.hypot(dx, dy));
+      const rawPower = distance / maxRadius;
+      const power = rawPower < 0.12 ? 0 : rawPower * 100;
+      if (power <= 0) return { angle: 0, power: 0 };
+      return {
+        angle: Math.atan2(dx, -dy) * 180 / Math.PI,
+        power
+      };
     }
 
     function updateGaitPreviewLabels() {
       if (gaitPhaseValue) gaitPhaseValue.textContent = `${Math.round(fullModel.previewPhase * 100)}%`;
-      if (gaitDirectionValue) gaitDirectionValue.textContent = `${Number(gaitDirection?.value || 0)} deg`;
-      if (gaitStrideValue) gaitStrideValue.textContent = `${Number(gaitStride?.value || 45)} mm`;
-      if (gaitLiftValue) gaitLiftValue.textContent = `${Number(gaitLift?.value || 28)} mm`;
-      if (gaitSpeedValue) gaitSpeedValue.textContent = `${(Number(gaitSpeed?.value || 1200) / 1000).toFixed(1)} s`;
+      if (gaitDirectionValue) {
+        const power = Number(gaitDirectionPower?.value || 0);
+        gaitDirectionValue.textContent = power > 0
+          ? `${Number(gaitDirection?.value || 0)} deg · ${Math.round(power)}%`
+          : 'Center';
+      }
+      if (gaitStrideValue) gaitStrideValue.textContent = `${Number(gaitStride?.value || 130)} mm`;
+      if (gaitLiftValue) gaitLiftValue.textContent = `${Number(gaitLift?.value || 40)} mm`;
+      if (gaitSpeedValue) gaitSpeedValue.textContent = `${(Number(gaitSpeed?.value || 2000) / 1000).toFixed(1)} s`;
       if (gaitPreviewState) {
         gaitPreviewState.textContent = fullModel.previewActive
           ? (fullModel.previewPlaying ? 'Playing' : 'Preview')
@@ -2259,13 +2279,15 @@
       }
     }
 
-    function playTripodServoGait() {
+    function playTripodServoGait(source = 'button') {
       if (!window.HexabotGaits) {
         log('error', 'Gait module is not loaded');
         return;
       }
       if (!wsConnected) {
-        log('error', 'Connect first before playing tripod gait on servos');
+        if (source !== 'joystick') {
+          log('error', 'Connect first before playing tripod gait on servos');
+        }
         return;
       }
       stopTripodServoGait('');
@@ -2298,7 +2320,29 @@
 
       tick();
       fullModel.servoTimer = setInterval(tick, fullModel.servoFrameIntervalMs);
-      log('log', 'Tripod servo gait started');
+      log('log', source === 'joystick' ? 'Joystick gait started' : 'Tripod servo gait started');
+    }
+
+    function updateJoystickDrivenGait() {
+      const power = Number(gaitDirectionPower?.value || 0);
+      if (power <= 0) {
+        if (fullModel.servoPlaying) {
+          stopTripodServoGait('Joystick released: movement stopped');
+        }
+        resetTripodPreview();
+        return;
+      }
+
+      if (!wsConnected) {
+        applyTripodPreviewFrame(fullModel.previewPhase);
+        return;
+      }
+
+      if (!fullModel.servoPlaying) {
+        playTripodServoGait('joystick');
+      } else {
+        updateGaitPreviewLabels();
+      }
     }
 
     function fullModelRotateInLegPlane(outward, vertical, angleRad) {
@@ -2462,7 +2506,15 @@
       if (gaitDirectionPad) {
         const updateFromPointer = (event) => {
           event.preventDefault();
-          setGaitDirection(gaitDirectionFromPointer(event));
+          const state = gaitDirectionStateFromPointer(event);
+          setGaitDirection(state.angle, state.power);
+          updateJoystickDrivenGait();
+        };
+
+        const releaseJoystick = (event) => {
+          if (event) event.preventDefault();
+          setGaitDirection(0, 0);
+          updateJoystickDrivenGait();
         };
 
         gaitDirectionPad.addEventListener('pointerdown', (event) => {
@@ -2474,6 +2526,17 @@
           if (gaitDirectionPad.hasPointerCapture(event.pointerId)) {
             updateFromPointer(event);
           }
+        });
+
+        gaitDirectionPad.addEventListener('pointerup', (event) => {
+          if (gaitDirectionPad.hasPointerCapture(event.pointerId)) {
+            gaitDirectionPad.releasePointerCapture(event.pointerId);
+          }
+          releaseJoystick(event);
+        });
+
+        gaitDirectionPad.addEventListener('pointercancel', (event) => {
+          releaseJoystick(event);
         });
 
         gaitDirectionPad.addEventListener('keydown', (event) => {
@@ -2488,16 +2551,25 @@
 
           if (event.key in keyAngles) {
             event.preventDefault();
-            setGaitDirection(keyAngles[event.key]);
+            setGaitDirection(keyAngles[event.key], 100);
+            updateJoystickDrivenGait();
           } else if (event.key === 'PageUp') {
             event.preventDefault();
-            setGaitDirection(current + step);
+            setGaitDirection(current + step, Number(gaitDirectionPower?.value || 100) || 100);
+            updateJoystickDrivenGait();
           } else if (event.key === 'PageDown') {
             event.preventDefault();
-            setGaitDirection(current - step);
+            setGaitDirection(current - step, Number(gaitDirectionPower?.value || 100) || 100);
+            updateJoystickDrivenGait();
           } else if (event.key === 'Home') {
             event.preventDefault();
-            setGaitDirection(0);
+            releaseJoystick(event);
+          }
+        });
+
+        gaitDirectionPad.addEventListener('keyup', (event) => {
+          if (['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'PageUp', 'PageDown'].includes(event.key)) {
+            releaseJoystick(event);
           }
         });
       }
