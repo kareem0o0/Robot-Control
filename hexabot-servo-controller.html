@@ -280,6 +280,71 @@
       text-align: center;
     }
 
+    .analog-direction {
+      width: 156px;
+      aspect-ratio: 1;
+      margin: 0.25rem auto 0;
+      border-radius: 50%;
+      border: 1px solid #2a4457;
+      background:
+        radial-gradient(circle at center, rgba(60, 207, 145, 0.16) 0 9%, transparent 10%),
+        linear-gradient(90deg, transparent calc(50% - 1px), rgba(127, 149, 168, 0.32) 50%, transparent calc(50% + 1px)),
+        linear-gradient(0deg, transparent calc(50% - 1px), rgba(127, 149, 168, 0.32) 50%, transparent calc(50% + 1px)),
+        #0a141c;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.34), 0 0 18px rgba(60, 207, 145, 0.08);
+      cursor: pointer;
+      position: relative;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .analog-direction:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(60, 207, 145, 0.16), inset 0 0 30px rgba(0, 0, 0, 0.34);
+    }
+
+    .analog-direction::before {
+      content: '';
+      position: absolute;
+      inset: 18px;
+      border: 1px dashed rgba(127, 149, 168, 0.34);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .analog-direction::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 3px;
+      height: 48px;
+      border-radius: 999px;
+      background: linear-gradient(var(--accent), rgba(60, 207, 145, 0.16));
+      transform: translate(-50%, -100%) rotate(var(--direction-rotation, 0deg));
+      transform-origin: 50% 100%;
+      pointer-events: none;
+      filter: drop-shadow(0 0 6px var(--accent-glow));
+    }
+
+    .analog-direction-knob {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid rgba(216, 248, 255, 0.76);
+      background: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+      transform: translate(calc(-50% + var(--knob-x, 0px)), calc(-50% + var(--knob-y, -52px)));
+      pointer-events: none;
+    }
+
+    .analog-direction-card input[type="hidden"] {
+      display: none;
+    }
+
     .macro-list {
       background: #0b1620;
       min-height: 50px;
@@ -405,6 +470,22 @@
       display: block;
     }
 
+    .full-model-view {
+      width: 100%;
+      height: 520px;
+      min-height: 520px;
+      background: #08131b;
+      border: 1px solid #1f3443;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .full-model-view:active {
+      cursor: grabbing;
+    }
+
     .leg-view-tools {
       display: none;
       position: absolute;
@@ -441,27 +522,56 @@
       stroke-width: 1.5;
     }
 
+    .leg-ground-line {
+      stroke: rgba(245, 166, 35, 0.86);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 14 8;
+      filter: drop-shadow(0 0 6px rgba(245, 166, 35, 0.22));
+      pointer-events: none;
+    }
+
     .leg-link {
       stroke: var(--accent);
-      stroke-width: 10;
+      stroke-width: 8;
       stroke-linecap: round;
+      stroke-linejoin: round;
       fill: none;
       filter: drop-shadow(0 0 6px var(--accent-glow));
     }
 
     .leg-link.secondary {
-      stroke: var(--info);
-      filter: drop-shadow(0 0 6px rgba(79, 195, 247, 0.25));
+      stroke: rgba(255, 255, 255, 0.38);
+      stroke-width: 7;
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.14));
     }
 
     .leg-link.tertiary {
-      stroke: var(--warning);
-      filter: drop-shadow(0 0 6px rgba(245, 166, 35, 0.25));
+      stroke: #2b66ff;
+      stroke-width: 7;
+      filter: drop-shadow(0 0 6px rgba(43, 102, 255, 0.28));
     }
 
     .leg-link.coxa {
       stroke: #b68cff;
       filter: drop-shadow(0 0 6px rgba(182, 140, 255, 0.25));
+    }
+
+    .leg-guide {
+      stroke: rgba(43, 102, 255, 0.82);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-dasharray: 8 6;
+      fill: none;
+      pointer-events: none;
+    }
+
+    .leg-fixed-dot {
+      fill: #2b66ff;
+      stroke: rgba(255, 255, 255, 0.55);
+      stroke-width: 1.5;
+      pointer-events: none;
+      filter: drop-shadow(0 0 5px rgba(43, 102, 255, 0.34));
     }
 
     .leg-hidden {
@@ -481,6 +591,17 @@
       stroke: #ffb8b8;
       cursor: pointer;
       filter: drop-shadow(0 0 8px rgba(225, 85, 84, 0.45));
+    }
+
+    .leg-joint-dot.limit {
+      fill: #05080a;
+      stroke: #d8f8ff;
+      filter: drop-shadow(0 0 8px rgba(216, 248, 255, 0.22));
+    }
+
+    .leg-joint-dot.locked.limit {
+      fill: var(--danger);
+      stroke: #ffb8b8;
     }
 
     .leg-effector {
@@ -625,10 +746,10 @@
             <div class="group-control">
               <div class="group-control-header">
                 <span>Tibia</span>
-                <span id="group-ang-2" class="angle-badge">90 deg</span>
+                <span id="group-ang-2" class="angle-badge">135 deg</span>
               </div>
               <div class="joint">
-                <input id="group-sl-2" type="range" min="0" max="180" value="90" class="slider" oninput="window.onGroupSlider(2, this.value)">
+                <input id="group-sl-2" type="range" min="0" max="180" value="135" class="slider" oninput="window.onGroupSlider(2, this.value)">
               </div>
             </div>
           </div>
@@ -657,14 +778,18 @@
                 <rect x="-70" y="-20" width="560" height="500" fill="url(#leg-grid)" />
                 <line id="leg-axis-x" class="leg-graph-axis" x1="-70" y1="220" x2="490" y2="220" />
                 <line id="leg-axis-y" class="leg-graph-axis" x1="180" y1="-20" x2="180" y2="480" />
+                <line id="leg-ground-line" class="leg-ground-line" x1="-70" y1="351.06" x2="490" y2="351.06" />
                 <path id="leg-link-coxa" class="leg-link coxa leg-hidden" d="" />
+                <path id="leg-guide-a" class="leg-guide" d="" />
+                <path id="leg-guide-b" class="leg-guide" d="" />
                 <path id="leg-link-a" class="leg-link" d="" />
                 <path id="leg-link-b" class="leg-link secondary" d="" />
                 <path id="leg-link-c" class="leg-link tertiary" d="" />
                 <circle id="leg-root-dot" class="leg-joint-dot leg-hidden" cx="0" cy="0" r="7" />
                 <circle id="leg-base-dot" class="leg-joint-dot" cx="180" cy="220" r="7" />
+                <circle id="leg-femur-fixed-dot" class="leg-fixed-dot" cx="0" cy="0" r="3.5" />
                 <circle id="leg-knee-dot" class="leg-joint-dot" cx="0" cy="0" r="8" />
-                <circle id="leg-ankle-dot" class="leg-joint-dot" cx="0" cy="0" r="6" />
+                <circle id="leg-ankle-dot" class="leg-fixed-dot" cx="0" cy="0" r="3.5" />
                 <circle id="leg-effector-dot" class="leg-effector" cx="0" cy="0" r="10" />
               </svg>
             </div>
@@ -672,7 +797,8 @@
               <div class="metric-box">
                 <label>Leg</label>
                 <select id="leg-mover-leg" style="width: 100%;">
-                  <option value="1">Leg 1</option>
+                  <option value="all">All Legs</option>
+                  <option value="1" selected>Leg 1</option>
                   <option value="2">Leg 2</option>
                   <option value="3">Leg 3</option>
                   <option value="4">Leg 4</option>
@@ -684,6 +810,10 @@
                 <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
                   <input id="leg-mover-3d" type="checkbox" style="width: auto;">
                   3D
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0.65rem 0 0;">
+                  <input id="leg-mover-ground" type="checkbox" checked style="width: auto;">
+                  Ground
                 </label>
               </div>
               <div class="metric-box">
@@ -703,6 +833,64 @@
                 <div id="leg-mover-point" class="metric-value">0, 0</div>
               </div>
               <button class="btn" id="leg-mover-reset" style="justify-content: center;"><i class="fas fa-crosshairs"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+        <div class="control-row">
+          <h3 style="margin-bottom: 0.8rem;"><i class="fas fa-project-diagram"></i> Hexapod Full Kinematic Model</h3>
+          <div id="full-kinematic-model" class="full-model-view" aria-label="Hexapod full kinematic model viewer"></div>
+          <div class="group-control-grid" style="margin-top: 0.8rem;">
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Tripod Preview</span>
+                <span id="gait-preview-state" class="angle-badge">Live</span>
+              </div>
+              <div class="row" style="gap: 0.5rem;">
+                <button class="btn btn-primary" id="gait-preview-play" style="justify-content: center;"><i class="fas fa-play"></i> Play</button>
+                <button class="btn" id="gait-preview-apply" style="justify-content: center;"><i class="fas fa-sliders-h"></i> Apply to Sliders</button>
+                <button class="btn btn-danger" id="gait-send-pose" style="justify-content: center;"><i class="fas fa-paper-plane"></i> Send Slider Pose</button>
+                <button class="btn btn-danger" id="gait-servo-play" style="justify-content: center;"><i class="fas fa-shoe-prints"></i> Play on Servos</button>
+                <button class="btn" id="gait-servo-stop" style="justify-content: center;"><i class="fas fa-hand-paper"></i> Stop Gait</button>
+                <button class="btn" id="gait-preview-reset" style="justify-content: center;"><i class="fas fa-stop"></i> Live Pose</button>
+              </div>
+            </div>
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Phase</span>
+                <span id="gait-phase-value" class="angle-badge">0%</span>
+              </div>
+              <input id="gait-phase" type="range" min="0" max="100" value="0" class="slider">
+            </div>
+            <div class="group-control analog-direction-card">
+              <div class="group-control-header">
+                <span>Direction vs Forward</span>
+                <span id="gait-direction-value" class="angle-badge">0 deg</span>
+              </div>
+              <div id="gait-direction-pad" class="analog-direction" role="slider" aria-label="Gait direction" aria-valuemin="-180" aria-valuemax="180" aria-valuenow="0" tabindex="0">
+                <span id="gait-direction-knob" class="analog-direction-knob"></span>
+              </div>
+              <input id="gait-direction" type="hidden" min="-180" max="180" value="0">
+            </div>
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Stride</span>
+                <span id="gait-stride-value" class="angle-badge">45 mm</span>
+              </div>
+              <input id="gait-stride" type="range" min="5" max="150" value="45" class="slider">
+            </div>
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Lift</span>
+                <span id="gait-lift-value" class="angle-badge">28 mm</span>
+              </div>
+              <input id="gait-lift" type="range" min="0" max="70" value="28" class="slider">
+            </div>
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Speed</span>
+                <span id="gait-speed-value" class="angle-badge">1.2 s</span>
+              </div>
+              <input id="gait-speed" type="range" min="400" max="3000" value="1200" class="slider">
             </div>
           </div>
         </div>
@@ -729,9 +917,8 @@
       <div class="card">
         <h3><i class="fas fa-globe"></i> Global Actions</h3>
         <div class="row" style="flex-direction: column; align-items: stretch;">
-          <button class="btn" onclick="sendCmd({command:'engageAll'})" style="justify-content: center;"><i class="fas fa-toggle-on"></i> Enable Servos</button>
           <button class="btn" id="builtin-led-btn" onclick="toggleBuiltinLed()" style="justify-content: center;"><i class="fas fa-lightbulb"></i> Built-in LED: OFF</button>
-          <button class="btn" onclick="centerAllServos()" style="justify-content: center;"><i class="fas fa-dot-circle"></i> Center All Servos</button>
+          <button class="btn" onclick="Home_Position()" style="justify-content: center;"><i class="fas fa-dot-circle"></i> Home Position</button>
           <button class="btn btn-danger" onclick="sendCmd({command:'emergencyStop'})" style="justify-content: center;"><i class="fas fa-skull-crosswalk"></i> E-STOP</button>
           <a class="btn" href="hexabot-model-viewer.html" style="justify-content: center; text-decoration: none;"><i class="fas fa-cube"></i> View Bot Model</a>
         </div>
@@ -756,6 +943,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="hexabot-gaits.js"></script>
 <script>
   (function() {
     // ---------- CONSTANTS & STATE ----------
@@ -768,7 +956,30 @@
     ];
     const LEG_MOVER_FEMUR_HOME_DEG = 90;
     const LEG_MOVER_TIBIA_HOME_DEG = 90;
+    const LEG_UI_HOME_TIBIA_DEG = 135;
     const REVERSED_SERVOS = new Set([0, 2, 3, 4, 6, 8, 9, 11, 12, 13, 15, 17]);
+    // UI/model offsets applied before backend tuning. Tibia is displayed/modelled
+    // around 135 deg while preserving the old 90 deg backend/home command.
+    const SERVO_UI_COMMAND_OFFSETS = {
+      2: -45,
+      5: -45,
+      8: -45,
+      11: -45,
+      14: -45,
+      17: -45
+    };
+    // Per-servo silent backend tuning offsets.
+    // Edit these when a servo needs a different physical angle than the UI/model angle.
+    // Example: offset +20 means command 90 deg is sent to hardware as 110 deg before reverse mapping.
+    const SERVO_COMMAND_OFFSETS = {
+      2: 20,  // Leg 1 Tibia: 90 -> 110
+      5: 20,  // Leg 2 Tibia: 90 -> 110
+      8: 20,  // Leg 3 Tibia: 90 -> 110
+      11: 30, // Leg 4 Tibia: 90 -> 120
+      14: 10, // Leg 5 Tibia: 90 -> 100
+      17: 10  // Leg 6 Tibia: 90 -> 100
+    };
+    const lastCommandByServo = {};
     let macroFrames = [];
     let ws = null;
     let wsConnected = false;
@@ -795,6 +1006,7 @@
     const legMover3dView = document.getElementById('leg-mover-3d-view');
     const legMoverLeg = document.getElementById('leg-mover-leg');
     const legMover3d = document.getElementById('leg-mover-3d');
+    const legMoverGround = document.getElementById('leg-mover-ground');
     const legViewTools = document.getElementById('leg-view-tools');
     const legViewLeft = document.getElementById('leg-view-left');
     const legViewRight = document.getElementById('leg-view-right');
@@ -809,25 +1021,54 @@
     const legMoverPoint = document.getElementById('leg-mover-point');
     const legMoverReset = document.getElementById('leg-mover-reset');
     const legLinkCoxa = document.getElementById('leg-link-coxa');
+    const legGuideA = document.getElementById('leg-guide-a');
+    const legGuideB = document.getElementById('leg-guide-b');
     const legLinkA = document.getElementById('leg-link-a');
     const legLinkB = document.getElementById('leg-link-b');
     const legLinkC = document.getElementById('leg-link-c');
+    const legGroundLine = document.getElementById('leg-ground-line');
+    const legFemurFixedDot = document.getElementById('leg-femur-fixed-dot');
     const legKneeDot = document.getElementById('leg-knee-dot');
     const legAnkleDot = document.getElementById('leg-ankle-dot');
     const legEffectorDot = document.getElementById('leg-effector-dot');
     const legRootDot = document.getElementById('leg-root-dot');
     const legBaseDot = document.getElementById('leg-base-dot');
+    const fullModelView = document.getElementById('full-kinematic-model');
+    const gaitPreviewState = document.getElementById('gait-preview-state');
+    const gaitPreviewPlay = document.getElementById('gait-preview-play');
+    const gaitPreviewApply = document.getElementById('gait-preview-apply');
+    const gaitSendPose = document.getElementById('gait-send-pose');
+    const gaitServoPlay = document.getElementById('gait-servo-play');
+    const gaitServoStop = document.getElementById('gait-servo-stop');
+    const gaitPreviewReset = document.getElementById('gait-preview-reset');
+    const gaitPhase = document.getElementById('gait-phase');
+    const gaitPhaseValue = document.getElementById('gait-phase-value');
+    const gaitDirection = document.getElementById('gait-direction');
+    const gaitDirectionValue = document.getElementById('gait-direction-value');
+    const gaitDirectionPad = document.getElementById('gait-direction-pad');
+    const gaitDirectionKnob = document.getElementById('gait-direction-knob');
+    const gaitStride = document.getElementById('gait-stride');
+    const gaitStrideValue = document.getElementById('gait-stride-value');
+    const gaitLift = document.getElementById('gait-lift');
+    const gaitLiftValue = document.getElementById('gait-lift-value');
+    const gaitSpeed = document.getElementById('gait-speed');
+    const gaitSpeedValue = document.getElementById('gait-speed-value');
 
     const legMover = {
       base: { x: 180, y: 220 },
       originBase: { x: 180, y: 220 },
       coxaLength: 75,
       is3d: false,
-      linkA: 95,
+      femurPrimaryLength: 51,
+      femurSecondaryLength: 51,
+      femurSecondaryAngleDeg: 45,
+      linkA: Math.hypot(51 + 51 * Math.cos(Math.PI / 4), 51 * Math.sin(Math.PI / 4)),
       linkB: 74.5,
       linkC: 95,
-      knee: { x: 275, y: 220 },
-      target: { x: 349.5, y: 315 },
+      knee: { x: 267.06, y: 256.06 },
+      target: { x: 341.56, y: 351.06 },
+      groundY: 351.06,
+      groundOffsetY: 0,
       viewYaw: -35,
       viewPitch: 24,
       viewScale: 1,
@@ -855,11 +1096,36 @@
       renderQueued: false,
       sendQueued: false,
       lastSendMs: 0,
+      lastDragSliderSyncMs: 0,
       sendIntervalMs: 90,
       minSendDeltaDeg: 1,
       lastSentAngles: {},
       pendingSend: false,
       suppressStatusUntilMs: 0
+    };
+
+    const fullModel = {
+      three: null,
+      bodyWidth: 169.45,
+      bodyHeight: 164.2,
+      topJointSpan: 121.5,
+      coxaLength: 75,
+      femurPrimaryLength: 51,
+      femurSecondaryLength: 51,
+      femurSecondaryAngleDeg: 45,
+      tibiaLength: 74.5,
+      footLength: 95,
+      renderQueued: false,
+      previewActive: false,
+      previewPlaying: false,
+      previewPhase: 0,
+      previewStartedAt: 0,
+      previewAngles: null,
+      previewRaf: null,
+      servoPlaying: false,
+      servoTimer: null,
+      servoStartedAt: 0,
+      servoFrameIntervalMs: 120
     };
 
     // ---------- LOGGING & TERMINAL ----------
@@ -908,11 +1174,13 @@
         if (onMessage) onMessage(event.data);
       };
       ws.onclose = () => {
+        stopTripodServoGait('Tripod servo gait stopped: websocket closed');
         updateConnectionUI(false);
         log('log', 'WebSocket closed');
         if (onClose) onClose();
       };
       ws.onerror = (err) => {
+        stopTripodServoGait('Tripod servo gait stopped: websocket error');
         log('error', 'WebSocket error');
         updateConnectionUI(false);
       };
@@ -941,18 +1209,47 @@
       if (angleSpan) {
         angleSpan.textContent = `${Math.round(angle)} deg${suffix}`;
       }
+      scheduleFullKinematicModelRender();
     }
 
     function sendServoAngle(idx, angle) {
-      const commandAngle = REVERSED_SERVOS.has(idx) ? 180 - angle : angle;
-      return wsSend({ command: 'set', idx: idx, servo_id: idx, angle: commandAngle, engage: true });
+      const commandUiAngle = Math.max(0, Math.min(180, angle + (SERVO_UI_COMMAND_OFFSETS[idx] || 0)));
+      const adjustedAngle = Math.max(0, Math.min(180, commandUiAngle + (SERVO_COMMAND_OFFSETS[idx] || 0)));
+      const commandAngle = REVERSED_SERVOS.has(idx) ? 180 - adjustedAngle : adjustedAngle;
+      const sent = wsSend({ command: 'set', idx: idx, servo_id: idx, angle: commandAngle, engage: true });
+      if (sent) {
+        lastCommandByServo[idx] = {
+          commandAngle,
+          uiAngle: angle
+        };
+      }
+      return sent;
     }
 
     function servoAngleToUi(idx, angle) {
-      return REVERSED_SERVOS.has(idx) ? 180 - angle : angle;
+      const adjustedAngle = REVERSED_SERVOS.has(idx) ? 180 - angle : angle;
+      const previous = lastCommandByServo[idx];
+      if (previous && Math.abs(previous.commandAngle - angle) < 1.5) {
+        return previous.uiAngle;
+      }
+      return Math.max(0, Math.min(180, adjustedAngle - (SERVO_UI_COMMAND_OFFSETS[idx] || 0)));
+    }
+
+    function isAllLegsSelected() {
+      return legMoverLeg?.value === 'all';
+    }
+
+    function shouldUseLegGround() {
+      return isAllLegsSelected() && legMoverGround?.checked;
+    }
+
+    function updateLegGroundControlState() {
+      if (!legMoverGround) return;
+      legMoverGround.disabled = !isAllLegsSelected();
     }
 
     function getSelectedLegNumber() {
+      if (isAllLegsSelected()) return 1;
       return parseInt(legMoverLeg?.value || '1');
     }
 
@@ -963,6 +1260,15 @@
         femur: baseIdx + 1,
         tibia: baseIdx + 2
       };
+    }
+
+    function getLegMoverServoPairs() {
+      if (!isAllLegsSelected()) return [getLegServoPair()];
+      return [1, 2, 3, 4, 5, 6].map((legNumber) => getLegServoPair(legNumber));
+    }
+
+    function isLegMoverServoIdx(idx) {
+      return getLegMoverServoPairs().some((pair) => idx === pair.coxa || idx === pair.femur || idx === pair.tibia);
     }
 
     function readServoSliderAngle(idx) {
@@ -982,10 +1288,7 @@
 
       const knee = legMover.baseLocked && legMover.lockedFemurRad !== null
         ? kneeFromFemur(legMover.lockedFemurRad)
-        : {
-            x: legMover.base.x + Math.cos(femurRad) * legMover.linkA,
-            y: legMover.base.y + Math.sin(femurRad) * legMover.linkA
-          };
+        : kneeFromFemur(femurRad);
       const target = targetFromKneeAndTibia(knee, lowerRad);
 
       legMover.knee = knee;
@@ -1001,40 +1304,50 @@
 
     function syncSlidersFromLegMover(sendCommands) {
       const pose = solveLegPreview();
-      const pair = getLegServoPair();
-      const coxaAngle = readServoSliderAngle(pair.coxa);
+      const pairs = getLegMoverServoPairs();
+      const sourcePair = getLegServoPair();
+      const coxaAngle = readServoSliderAngle(sourcePair.coxa);
       const femurAngle = pose.femurDeg;
       const tibiaAngle = pose.tibiaDeg;
 
-      setServoUi(pair.coxa, coxaAngle);
-      setServoUi(pair.femur, femurAngle);
-      setServoUi(pair.tibia, tibiaAngle);
+      pairs.forEach((pair) => {
+        setServoUi(pair.coxa, coxaAngle);
+        setServoUi(pair.femur, femurAngle);
+        setServoUi(pair.tibia, tibiaAngle);
+      });
 
       if (sendCommands) {
-        sendServoAngle(pair.femur, femurAngle);
-        sendServoAngle(pair.tibia, tibiaAngle);
+        pairs.forEach((pair) => {
+          sendServoAngle(pair.femur, femurAngle);
+          sendServoAngle(pair.tibia, tibiaAngle);
+        });
       }
     }
 
     function syncSlidersFromLegMoverSilent() {
       const pose = solveLegPreview();
-      const pair = getLegServoPair();
-      setServoUi(pair.coxa, getSelectedCoxaAngle());
-      setServoUi(pair.femur, pose.femurDeg);
-      setServoUi(pair.tibia, pose.tibiaDeg);
+      syncSlidersFromLegMoverPose(pose);
+    }
+
+    function syncSlidersFromLegMoverPose(pose) {
+      const coxaAngle = getSelectedCoxaAngle();
+      getLegMoverServoPairs().forEach((pair) => {
+        setServoUi(pair.coxa, coxaAngle);
+        setServoUi(pair.femur, pose.femurDeg);
+        setServoUi(pair.tibia, pose.tibiaDeg);
+      });
     }
 
     function setCoxaFromLegMover(angle, sendCommand = false) {
-      const pair = getLegServoPair();
       const clampedAngle = clampServoDisplayAngle(angle);
       if (legMover.coxaLocked && legMover.lockedCoxaAngle !== null) {
-        setServoUi(pair.coxa, legMover.lockedCoxaAngle);
+        getLegMoverServoPairs().forEach((pair) => setServoUi(pair.coxa, legMover.lockedCoxaAngle));
         return;
       }
 
-      setServoUi(pair.coxa, clampedAngle);
+      getLegMoverServoPairs().forEach((pair) => setServoUi(pair.coxa, clampedAngle));
       if (sendCommand) {
-        sendServoAngle(pair.coxa, clampedAngle);
+        getLegMoverServoPairs().forEach((pair) => sendServoAngle(pair.coxa, clampedAngle));
       }
       renderLegMover();
     }
@@ -1055,11 +1368,14 @@
 
     function sendLegMoverServoAngles(force = false) {
       const pose = solveLegPreview();
-      const pair = getLegServoPair();
+      const pairs = getLegMoverServoPairs();
+      const coxaAngle = getSelectedCoxaAngle();
       legMover.suppressStatusUntilMs = performance.now() + 350;
-      sendLegMoverServoAngle(pair.coxa, getSelectedCoxaAngle(), force);
-      sendLegMoverServoAngle(pair.femur, pose.femurDeg, force);
-      sendLegMoverServoAngle(pair.tibia, pose.tibiaDeg, force);
+      pairs.forEach((pair) => {
+        sendLegMoverServoAngle(pair.coxa, coxaAngle, force);
+        sendLegMoverServoAngle(pair.femur, pose.femurDeg, force);
+        sendLegMoverServoAngle(pair.tibia, pose.tibiaDeg, force);
+      });
     }
 
     function scheduleLegMoverRender() {
@@ -1067,16 +1383,33 @@
       legMover.renderQueued = true;
       requestAnimationFrame(() => {
         legMover.renderQueued = false;
-        renderLegMover();
-        syncSlidersFromLegMoverSilent();
+        const pose = renderLegMover();
+        if (pose) syncSlidersFromLegMoverPose(pose);
       });
+    }
+
+    function renderLegMoverDuringDrag() {
+      legMover.renderQueued = false;
+      const pose = renderLegMover();
+      if (!pose) return;
+      const now = performance.now();
+      const throttleSliderSync = legMover.is3d && isAllLegsSelected();
+      if (!throttleSliderSync || now - legMover.lastDragSliderSyncMs > 100) {
+        legMover.lastDragSliderSyncMs = now;
+        syncSlidersFromLegMoverPose(pose);
+      }
+    }
+
+    function getLegMoverSendIntervalMs() {
+      return isAllLegsSelected() ? 150 : legMover.sendIntervalMs;
     }
 
     function scheduleLegMoverSend(force = false) {
       const now = performance.now();
       const elapsed = now - legMover.lastSendMs;
+      const sendIntervalMs = getLegMoverSendIntervalMs();
 
-      if (force || elapsed >= legMover.sendIntervalMs) {
+      if (force || elapsed >= sendIntervalMs) {
         legMover.pendingSend = false;
         legMover.lastSendMs = now;
         sendLegMoverServoAngles(force);
@@ -1096,7 +1429,7 @@
         legMover.pendingSend = false;
         legMover.lastSendMs = performance.now();
         sendLegMoverServoAngles(false);
-      }, legMover.sendIntervalMs - elapsed);
+      }, sendIntervalMs - elapsed);
     }
 
     function handleStatusMessage(raw) {
@@ -1109,7 +1442,6 @@
 
       if (Array.isArray(data.servos)) {
         let shouldSyncLegMover = false;
-        const pair = getLegServoPair();
         const suppressSelectedLegStatus = performance.now() < legMover.suppressStatusUntilMs;
         data.servos.forEach((servo) => {
           const idx = Number(servo.idx);
@@ -1117,7 +1449,7 @@
 
           const slider = document.getElementById('sl-' + idx);
           const angle = servo.target ?? servo.current;
-          const isSelectedLegMoverServo = idx === pair.coxa || idx === pair.femur || idx === pair.tibia;
+          const isSelectedLegMoverServo = isLegMoverServoIdx(idx);
           if (suppressSelectedLegStatus && isSelectedLegMoverServo) {
             return;
           }
@@ -1139,6 +1471,7 @@
         if (shouldSyncLegMover && !legMover.dragging) {
           syncLegMoverFromSliders();
         }
+        scheduleFullKinematicModelRender();
       }
 
       if (typeof data.globalSpeed === 'number') {
@@ -1159,12 +1492,13 @@
         
         for (let j = 0; j < 3; j++) {
           const idx = (leg - 1) * 3 + j;
+          const defaultAngle = j === 2 ? LEG_UI_HOME_TIBIA_DEG : 90;
           const jointDiv = document.createElement('div');
           jointDiv.className = 'joint';
           jointDiv.innerHTML = `
             <label>${JOINT_NAMES[j]}</label>
-            <input id="sl-${idx}" type="range" min="0" max="180" value="90" class="slider" oninput="window.onSlider(${idx}, this.value)">
-            <span id="ang-${idx}" class="angle-badge">90 deg</span>
+            <input id="sl-${idx}" type="range" min="0" max="180" value="${defaultAngle}" class="slider" oninput="window.onSlider(${idx}, this.value)">
+            <span id="ang-${idx}" class="angle-badge">${defaultAngle} deg</span>
           `;
           container.appendChild(jointDiv);
         }
@@ -1212,17 +1546,49 @@
     }
 
     function getTibiaRadians(knee, target) {
-      return Math.atan2(target.y - knee.y, target.x - knee.x) - getLowerAssemblyOffsetRad();
+      const absoluteTibiaRad = Math.atan2(target.y - knee.y, target.x - knee.x) - getLowerAssemblyOffsetRad();
+      return absoluteTibiaRad - getTibiaReferenceRadians(knee);
     }
 
     function getFemurRadians(knee) {
-      return Math.atan2(knee.y - legMover.base.y, knee.x - legMover.base.x);
+      return Math.atan2(knee.y - legMover.base.y, knee.x - legMover.base.x) - getFemurAssemblyOffsetRad();
     }
 
     function kneeFromFemur(femurRad) {
+      const fixed = femurFixedPointFromAngle(femurRad);
+      const secondRad = femurRad + getFemurSecondaryAngleRad();
       return {
-        x: legMover.base.x + Math.cos(femurRad) * legMover.linkA,
-        y: legMover.base.y + Math.sin(femurRad) * legMover.linkA
+        x: fixed.x + Math.cos(secondRad) * legMover.femurSecondaryLength,
+        y: fixed.y + Math.sin(secondRad) * legMover.femurSecondaryLength
+      };
+    }
+
+    function getFemurAssemblyOffsetRad() {
+      return Math.atan2(
+        Math.sin(getFemurSecondaryAngleRad()) * legMover.femurSecondaryLength,
+        legMover.femurPrimaryLength + Math.cos(getFemurSecondaryAngleRad()) * legMover.femurSecondaryLength
+      );
+    }
+
+    function getFemurSecondaryAngleRad() {
+      return legMover.femurSecondaryAngleDeg * Math.PI / 180;
+    }
+
+    function getTibiaReferenceRadians(knee) {
+      return getFemurRadians(knee) + getFemurSecondaryAngleRad();
+    }
+
+    function femurFixedPointFromAngle(femurRad) {
+      return {
+        x: legMover.base.x + Math.cos(femurRad) * legMover.femurPrimaryLength,
+        y: legMover.base.y + Math.sin(femurRad) * legMover.femurPrimaryLength
+      };
+    }
+
+    function getFemurShapePoints(knee) {
+      const femurRad = getFemurRadians(knee);
+      return {
+        fixed: femurFixedPointFromAngle(femurRad)
       };
     }
 
@@ -1244,10 +1610,10 @@
       return (getSelectedCoxaAngle() - 90) * Math.PI / 180;
     }
 
-    function localLegPointToWorld3(point) {
+    function localLegPointToWorld3(point, includeGroundOffset = true) {
       const yaw = getSelectedCoxaYawRad();
       const localForward = point.x - legMover.base.x;
-      const localDown = point.y - legMover.base.y;
+      const localDown = point.y + (includeGroundOffset ? legMover.groundOffsetY : 0) - legMover.base.y;
       const forward = legMover.coxaLength + localForward;
 
       return new THREE.Vector3(
@@ -1276,7 +1642,7 @@
       const forward = hit.x * Math.cos(yaw) + hit.z * Math.sin(yaw);
       return {
         x: legMover.base.x + forward - legMover.coxaLength,
-        y: legMover.base.y - hit.y
+        y: legMover.base.y - hit.y - legMover.groundOffsetY
       };
     }
 
@@ -1326,7 +1692,7 @@
       const radialForward = hit.x * Math.cos(yawRad) + hit.z * Math.sin(yawRad);
       const localTarget = {
         x: legMover.base.x + radialForward - legMover.coxaLength,
-        y: legMover.base.y - hit.y
+        y: legMover.base.y - hit.y - legMover.groundOffsetY
       };
 
       setCoxaFromLegMover(coxaAngle, false);
@@ -1345,13 +1711,45 @@
       return new THREE.Mesh(geometry, material);
     }
 
+    function createGuideLine3d(color = 0x2b66ff) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+      const material = new THREE.LineDashedMaterial({
+        color,
+        dashSize: 12,
+        gapSize: 7,
+        linewidth: 1,
+        transparent: true,
+        opacity: 0.75
+      });
+      return new THREE.Line(geometry, material);
+    }
+
     function updateLinkMesh(mesh, start, end) {
       const direction = new THREE.Vector3().subVectors(end, start);
       const length = direction.length();
+      if (length < 0.001) {
+        mesh.visible = false;
+        return;
+      }
+      mesh.visible = true;
       const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
       mesh.position.copy(midpoint);
       mesh.scale.set(1, length, 1);
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+    }
+
+    function updateGuideLine3d(line, start, end) {
+      const positions = line.geometry.attributes.position.array;
+      positions[0] = start.x;
+      positions[1] = start.y;
+      positions[2] = start.z;
+      positions[3] = end.x;
+      positions[4] = end.y;
+      positions[5] = end.z;
+      line.geometry.attributes.position.needsUpdate = true;
+      line.geometry.computeBoundingSphere();
+      line.computeLineDistances();
     }
 
     function ensureLeg3dScene() {
@@ -1362,8 +1760,11 @@
       const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
       camera.position.set(230, 180, 260);
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.autoClear = true;
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setSize(legMover3dView.clientWidth || 600, legMover3dView.clientHeight || 430);
+      legMover3dView.querySelectorAll('canvas[data-leg-mover-canvas="true"]').forEach((canvas) => canvas.remove());
+      renderer.domElement.dataset.legMoverCanvas = 'true';
       legMover3dView.appendChild(renderer.domElement);
 
       const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -1379,9 +1780,6 @@
         ONE: null,
         TWO: THREE.TOUCH.DOLLY_PAN
       };
-      controls.addEventListener('change', () => {
-        renderer.render(scene, camera);
-      });
 
       scene.add(new THREE.AmbientLight(0xffffff, 0.65));
       const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -1397,22 +1795,49 @@
 
       const links = {
         coxa: createLinkMesh(0xb68cff),
-        femur: createLinkMesh(0x3ccf91),
+        femurPrimary: createLinkMesh(0xffffff),
+        femurSecondary: createLinkMesh(0xffffff),
         tibia: createLinkMesh(0x4fc3f7),
         foot: createLinkMesh(0xf5a623)
       };
+      links.femurPrimary.material.transparent = true;
+      links.femurPrimary.material.opacity = 0.38;
+      links.femurSecondary.material.transparent = true;
+      links.femurSecondary.material.opacity = 0.38;
       Object.values(links).forEach((link) => scene.add(link));
+
+      const guides = {
+        femur: createGuideLine3d(0x2b66ff),
+        tibia: createGuideLine3d(0x2b66ff)
+      };
+      Object.values(guides).forEach((guide) => scene.add(guide));
+
+      const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(520, 260),
+        new THREE.MeshStandardMaterial({
+          color: 0xf5a623,
+          transparent: true,
+          opacity: 0.16,
+          roughness: 0.7,
+          metalness: 0.05,
+          side: THREE.DoubleSide
+        })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.visible = false;
+      scene.add(ground);
 
       const joints = {
         root: createJointMesh(0xd8f8ff, 8),
         base: createJointMesh(0xd8f8ff, 8),
+        fixed: createJointMesh(0x2b66ff, 5),
         knee: createJointMesh(0xd8f8ff, 8),
         ankle: createJointMesh(0xd8f8ff, 6),
         effector: createJointMesh(0xf5a623, 10)
       };
       Object.values(joints).forEach((joint) => scene.add(joint));
 
-      legMover.three = { scene, camera, renderer, controls, links, joints };
+      legMover.three = { scene, camera, renderer, controls, links, guides, joints, ground };
       window.addEventListener('resize', resizeLeg3dScene);
     }
 
@@ -1430,29 +1855,699 @@
       if (!legMover.three) return;
       resizeLeg3dScene();
 
-      const root = new THREE.Vector3(0, 0, 0);
+      const rawFemurShape = getFemurShapePoints(pose.knee);
+      legMover.groundOffsetY = shouldUseLegGround()
+        ? getGroundDisplayOffset([
+            legMover.base,
+            rawFemurShape.fixed,
+            pose.knee,
+            ankle,
+            pose.target
+          ])
+        : 0;
+      const root = new THREE.Vector3(0, -legMover.groundOffsetY, 0);
       const base = localLegPointToWorld3(legMover.base);
+      const femurFixed = localLegPointToWorld3(rawFemurShape.fixed);
       const knee = localLegPointToWorld3(pose.knee);
       const anklePoint = localLegPointToWorld3(ankle);
       const target = localLegPointToWorld3(pose.target);
-      const { links, joints } = legMover.three;
+      const { links, guides, joints, ground } = legMover.three;
 
       updateLinkMesh(links.coxa, root, base);
-      updateLinkMesh(links.femur, base, knee);
+      updateLinkMesh(links.femurPrimary, base, femurFixed);
+      updateLinkMesh(links.femurSecondary, femurFixed, knee);
       updateLinkMesh(links.tibia, knee, anklePoint);
       updateLinkMesh(links.foot, anklePoint, target);
+      updateGuideLine3d(guides.femur, base, knee);
+      updateGuideLine3d(guides.tibia, knee, target);
 
       joints.root.position.copy(root);
       joints.base.position.copy(base);
+      joints.fixed.position.copy(femurFixed);
       joints.knee.position.copy(knee);
       joints.ankle.position.copy(anklePoint);
       joints.effector.position.copy(target);
-      joints.root.material.color.set(legMover.coxaLocked ? 0xe15554 : 0xd8f8ff);
-      joints.base.material.color.set(legMover.baseLocked ? 0xe15554 : 0xd8f8ff);
-      joints.knee.material.color.set(legMover.kneeLocked ? 0xe15554 : 0xd8f8ff);
+      joints.root.material.color.set(legMover.coxaLocked ? 0xe15554 : isAtServoLimit(getSelectedCoxaAngle()) ? 0x05080a : 0xd8f8ff);
+      joints.base.material.color.set(legMover.baseLocked ? 0xe15554 : isAtServoLimit(pose.femurDeg) ? 0x05080a : 0xd8f8ff);
+      joints.knee.material.color.set(legMover.kneeLocked ? 0xe15554 : isAtServoLimit(pose.tibiaDeg) ? 0x05080a : 0xd8f8ff);
+      joints.fixed.material.color.set(0x2b66ff);
+      joints.ankle.material.color.set(0x2b66ff);
+      ground.visible = shouldUseLegGround();
+      ground.position.set(
+        Math.cos(getSelectedCoxaYawRad()) * 165,
+        -(legMover.groundY - legMover.base.y),
+        Math.sin(getSelectedCoxaYawRad()) * 165
+      );
 
       legMover.three.controls.update();
+      legMover.three.renderer.setClearColor(0x08131b, 1);
+      legMover.three.renderer.clear(true, true, true);
       legMover.three.renderer.render(legMover.three.scene, legMover.three.camera);
+    }
+
+    function getFullModelBasePoints() {
+      const halfW = fullModel.bodyWidth / 2;
+      const halfH = fullModel.bodyHeight / 2;
+      const halfTop = fullModel.topJointSpan / 2;
+      return [
+        new THREE.Vector3(-halfTop, 0, -halfH),
+        new THREE.Vector3(-halfW, 0, 0),
+        new THREE.Vector3(-halfTop, 0, halfH),
+        new THREE.Vector3(halfTop, 0, halfH),
+        new THREE.Vector3(halfW, 0, 0),
+        new THREE.Vector3(halfTop, 0, -halfH)
+      ];
+    }
+
+    function createFullModelLine(color, opacity = 1, dashed = false, radius = 2.6) {
+      const material = new THREE.MeshStandardMaterial({
+        color,
+        transparent: opacity < 1,
+        opacity,
+        roughness: 0.45,
+        metalness: 0.12
+      });
+      if (!dashed) {
+        return {
+          dashed: false,
+          mesh: new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, 1, 16), material)
+        };
+      }
+      const segments = Array.from({ length: 8 }, () => new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, 1, 12), material));
+      return { dashed: true, segments };
+    }
+
+    function updateFullModelLine(line, start, end) {
+      if (line.dashed) {
+        updateFullModelDashedLine(line, start, end);
+        return;
+      }
+      updateFullModelRod(line.mesh, start, end);
+    }
+
+    function updateFullModelRod(mesh, start, end) {
+      const direction = new THREE.Vector3().subVectors(end, start);
+      const length = direction.length();
+      if (length < 0.001) {
+        mesh.visible = false;
+        return;
+      }
+      mesh.visible = true;
+      mesh.position.copy(new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5));
+      mesh.scale.set(1, length, 1);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+    }
+
+    function updateFullModelDashedLine(line, start, end) {
+      const direction = new THREE.Vector3().subVectors(end, start);
+      const length = direction.length();
+      if (length < 0.001) {
+        line.segments.forEach((segment) => { segment.visible = false; });
+        return;
+      }
+      const unit = direction.clone().normalize();
+      const dash = 10;
+      const gap = 7;
+      line.segments.forEach((segment, index) => {
+        const segmentStart = index * (dash + gap);
+        if (segmentStart >= length) {
+          segment.visible = false;
+          return;
+        }
+        const segmentEnd = Math.min(segmentStart + dash, length);
+        const a = start.clone().add(unit.clone().multiplyScalar(segmentStart));
+        const b = start.clone().add(unit.clone().multiplyScalar(segmentEnd));
+        updateFullModelRod(segment, a, b);
+      });
+    }
+
+    function createFullModelJoint(color, radius) {
+      const geometry = new THREE.SphereGeometry(radius, 20, 14);
+      const material = new THREE.MeshStandardMaterial({ color, roughness: 0.46, metalness: 0.12 });
+      return new THREE.Mesh(geometry, material);
+    }
+
+    function createFullModelForwardArrow() {
+      const group = new THREE.Group();
+      const shaft = createFullModelLine(0x4ae0a3, 1, false, 3);
+      const start = new THREE.Vector3(0, 10, 0);
+      const end = new THREE.Vector3(0, 10, 128);
+      updateFullModelLine(shaft, start, end);
+      addFullModelLineToScene(group, shaft);
+
+      const cone = new THREE.Mesh(
+        new THREE.ConeGeometry(11, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0x4ae0a3, roughness: 0.38, metalness: 0.16 })
+      );
+      cone.position.copy(end.clone().add(new THREE.Vector3(0, 0, 12)));
+      cone.rotation.x = Math.PI / 2;
+      group.add(cone);
+
+      const marker = createFullModelJoint(0x4ae0a3, 4);
+      marker.position.copy(start);
+      group.add(marker);
+      return group;
+    }
+
+    function addFullModelLineToScene(scene, line) {
+      if (line.dashed) {
+        line.segments.forEach((segment) => scene.add(segment));
+      } else {
+        scene.add(line.mesh);
+      }
+    }
+
+    function createFullModelBodyFill(points) {
+      const shape = new THREE.Shape();
+      points.forEach((point, index) => {
+        if (index === 0) shape.moveTo(point.x, point.z);
+        else shape.lineTo(point.x, point.z);
+      });
+      shape.closePath();
+      const geometry = new THREE.ShapeGeometry(shape);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x6f7a82,
+        transparent: true,
+        opacity: 0.38,
+        roughness: 0.75,
+        metalness: 0.08,
+        side: THREE.DoubleSide
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.rotation.x = Math.PI / 2;
+      return mesh;
+    }
+
+    function fullModelLegAngles(legNumber) {
+      if (fullModel.previewActive && fullModel.previewAngles?.[legNumber]) {
+        return fullModel.previewAngles[legNumber];
+      }
+      const pair = getLegServoPair(legNumber);
+      return {
+        coxa: readServoSliderAngle(pair.coxa),
+        femur: readServoSliderAngle(pair.femur),
+        tibia: readServoSliderAngle(pair.tibia)
+      };
+    }
+
+    function getGaitPreviewOptions() {
+      return {
+        directionDeg: Number(gaitDirection?.value || 0),
+        strideLength: Number(gaitStride?.value || 45),
+        liftHeight: Number(gaitLift?.value || 28),
+        durationMs: Number(gaitSpeed?.value || 1200)
+      };
+    }
+
+    function clampGaitDirection(angle) {
+      let normalized = Number(angle) || 0;
+      while (normalized > 180) normalized -= 360;
+      while (normalized < -180) normalized += 360;
+      return Math.round(normalized);
+    }
+
+    function renderGaitDirectionPad() {
+      if (!gaitDirectionPad) return;
+      const angle = clampGaitDirection(gaitDirection?.value || 0);
+      const radians = angle * Math.PI / 180;
+      const radius = 52;
+      gaitDirectionPad.style.setProperty('--direction-rotation', `${angle}deg`);
+      gaitDirectionPad.style.setProperty('--knob-x', `${Math.sin(radians) * radius}px`);
+      gaitDirectionPad.style.setProperty('--knob-y', `${-Math.cos(radians) * radius}px`);
+      gaitDirectionPad.setAttribute('aria-valuenow', String(angle));
+      gaitDirectionPad.setAttribute('aria-valuetext', `${angle} degrees`);
+      if (gaitDirection && gaitDirection.value !== String(angle)) {
+        gaitDirection.value = String(angle);
+      }
+    }
+
+    function setGaitDirection(angle, emitInput = true) {
+      if (!gaitDirection) return;
+      gaitDirection.value = String(clampGaitDirection(angle));
+      renderGaitDirectionPad();
+      if (emitInput) {
+        gaitDirection.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+
+    function gaitDirectionFromPointer(event) {
+      if (!gaitDirectionPad) return 0;
+      const rect = gaitDirectionPad.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dx = event.clientX - centerX;
+      const dy = event.clientY - centerY;
+      if (Math.hypot(dx, dy) < 8) return 0;
+      return Math.atan2(dx, -dy) * 180 / Math.PI;
+    }
+
+    function updateGaitPreviewLabels() {
+      if (gaitPhaseValue) gaitPhaseValue.textContent = `${Math.round(fullModel.previewPhase * 100)}%`;
+      if (gaitDirectionValue) gaitDirectionValue.textContent = `${Number(gaitDirection?.value || 0)} deg`;
+      if (gaitStrideValue) gaitStrideValue.textContent = `${Number(gaitStride?.value || 45)} mm`;
+      if (gaitLiftValue) gaitLiftValue.textContent = `${Number(gaitLift?.value || 28)} mm`;
+      if (gaitSpeedValue) gaitSpeedValue.textContent = `${(Number(gaitSpeed?.value || 1200) / 1000).toFixed(1)} s`;
+      if (gaitPreviewState) {
+        gaitPreviewState.textContent = fullModel.previewActive
+          ? (fullModel.previewPlaying ? 'Playing' : 'Preview')
+          : 'Live';
+      }
+      if (gaitPreviewPlay) {
+        gaitPreviewPlay.innerHTML = fullModel.previewPlaying
+          ? '<i class="fas fa-pause"></i> Pause'
+          : '<i class="fas fa-play"></i> Play';
+      }
+      renderGaitDirectionPad();
+    }
+
+    function applyTripodPreviewFrame(phase = fullModel.previewPhase) {
+      if (!window.HexabotGaits) return;
+      const frame = window.HexabotGaits.tripodFrame(phase, getGaitPreviewOptions());
+      fullModel.previewAngles = {};
+      for (let leg = 1; leg <= 6; leg++) {
+        fullModel.previewAngles[leg] = frame.legs[leg].angles;
+      }
+      fullModel.previewActive = true;
+      fullModel.previewPhase = phase % 1;
+      if (gaitPhase) gaitPhase.value = Math.round(fullModel.previewPhase * 100);
+      updateGaitPreviewLabels();
+      scheduleFullKinematicModelRender();
+    }
+
+    function applyGaitAnglesToSliders(anglesByLeg) {
+      for (let leg = 1; leg <= 6; leg++) {
+        const pair = getLegServoPair(leg);
+        const angles = anglesByLeg?.[leg];
+        if (!angles) continue;
+        setServoUi(pair.coxa, angles.coxa);
+        setServoUi(pair.femur, angles.femur);
+        setServoUi(pair.tibia, angles.tibia);
+      }
+      syncLegMoverFromSliders();
+      scheduleFullKinematicModelRender();
+    }
+
+    function sendGaitAnglesToServos(anglesByLeg) {
+      let sent = 0;
+      for (let leg = 1; leg <= 6; leg++) {
+        const pair = getLegServoPair(leg);
+        const angles = anglesByLeg?.[leg];
+        if (!angles) continue;
+        if (sendServoAngle(pair.coxa, angles.coxa)) sent++;
+        if (sendServoAngle(pair.femur, angles.femur)) sent++;
+        if (sendServoAngle(pair.tibia, angles.tibia)) sent++;
+      }
+      return sent;
+    }
+
+    function animateTripodPreview(timestamp) {
+      if (!fullModel.previewPlaying) return;
+      if (!fullModel.previewStartedAt) fullModel.previewStartedAt = timestamp - fullModel.previewPhase * getGaitPreviewOptions().durationMs;
+      const duration = getGaitPreviewOptions().durationMs;
+      const phase = ((timestamp - fullModel.previewStartedAt) % duration) / duration;
+      applyTripodPreviewFrame(phase);
+      fullModel.previewRaf = requestAnimationFrame(animateTripodPreview);
+    }
+
+    function setTripodPreviewPlaying(playing) {
+      if (playing && !window.HexabotGaits) {
+        log('error', 'Gait module is not loaded');
+        return;
+      }
+      if (playing) {
+        stopTripodServoGait('');
+      }
+      fullModel.previewPlaying = playing;
+      if (playing) {
+        fullModel.previewActive = true;
+        fullModel.previewStartedAt = 0;
+        fullModel.previewRaf = requestAnimationFrame(animateTripodPreview);
+      } else if (fullModel.previewRaf) {
+        cancelAnimationFrame(fullModel.previewRaf);
+        fullModel.previewRaf = null;
+      }
+      updateGaitPreviewLabels();
+    }
+
+    function resetTripodPreview() {
+      setTripodPreviewPlaying(false);
+      fullModel.previewActive = false;
+      fullModel.previewAngles = null;
+      fullModel.previewPhase = 0;
+      if (gaitPhase) gaitPhase.value = 0;
+      updateGaitPreviewLabels();
+      scheduleFullKinematicModelRender();
+    }
+
+    function applyTripodPreviewToSliders() {
+      if (!window.HexabotGaits) {
+        log('error', 'Gait module is not loaded');
+        return;
+      }
+      stopTripodServoGait('');
+      if (!fullModel.previewAngles) {
+        applyTripodPreviewFrame(Number(gaitPhase?.value || 0) / 100);
+      }
+
+      applyGaitAnglesToSliders(fullModel.previewAngles);
+      fullModel.previewActive = false;
+      fullModel.previewAngles = null;
+      updateGaitPreviewLabels();
+      log('log', 'Tripod preview copied to sliders (no servo commands sent)');
+    }
+
+    function sendCurrentSliderPose() {
+      if (!wsConnected) {
+        log('error', 'Connect first before sending slider pose');
+        return;
+      }
+      stopTripodServoGait('');
+      setTripodPreviewPlaying(false);
+      let sent = 0;
+      for (let idx = 0; idx < NUM_SERVOS; idx++) {
+        if (sendServoAngle(idx, readServoSliderAngle(idx))) {
+          sent++;
+        }
+      }
+      log('log', `Current slider pose sent (${sent} servos)`);
+    }
+
+    function updateServoGaitButtons() {
+      if (gaitServoPlay) {
+        gaitServoPlay.disabled = fullModel.servoPlaying;
+      }
+      if (gaitServoStop) {
+        gaitServoStop.disabled = !fullModel.servoPlaying;
+      }
+      updateGaitPreviewLabels();
+      if (gaitPreviewState && fullModel.servoPlaying) {
+        gaitPreviewState.textContent = 'Servo gait';
+      }
+    }
+
+    function stopTripodServoGait(reason = 'Tripod servo gait stopped') {
+      if (fullModel.servoTimer) {
+        clearInterval(fullModel.servoTimer);
+        fullModel.servoTimer = null;
+      }
+      const wasPlaying = fullModel.servoPlaying;
+      fullModel.servoPlaying = false;
+      fullModel.servoStartedAt = 0;
+      updateServoGaitButtons();
+      if (wasPlaying && reason) {
+        log('log', reason);
+      }
+    }
+
+    function playTripodServoGait() {
+      if (!window.HexabotGaits) {
+        log('error', 'Gait module is not loaded');
+        return;
+      }
+      if (!wsConnected) {
+        log('error', 'Connect first before playing tripod gait on servos');
+        return;
+      }
+      stopTripodServoGait('');
+      setTripodPreviewPlaying(false);
+      fullModel.previewActive = true;
+      fullModel.servoPlaying = true;
+      fullModel.servoStartedAt = performance.now() - fullModel.previewPhase * getGaitPreviewOptions().durationMs;
+      updateServoGaitButtons();
+
+      const tick = () => {
+        if (!wsConnected) {
+          stopTripodServoGait('Tripod servo gait stopped: websocket disconnected');
+          return;
+        }
+        const options = getGaitPreviewOptions();
+        const phase = ((performance.now() - fullModel.servoStartedAt) % options.durationMs) / options.durationMs;
+        const frame = window.HexabotGaits.tripodFrame(phase, options);
+        const anglesByLeg = {};
+        for (let leg = 1; leg <= 6; leg++) {
+          anglesByLeg[leg] = frame.legs[leg].angles;
+        }
+        fullModel.previewAngles = anglesByLeg;
+        fullModel.previewPhase = phase;
+        fullModel.previewActive = true;
+        if (gaitPhase) gaitPhase.value = Math.round(phase * 100);
+        updateServoGaitButtons();
+        applyGaitAnglesToSliders(anglesByLeg);
+        sendGaitAnglesToServos(anglesByLeg);
+      };
+
+      tick();
+      fullModel.servoTimer = setInterval(tick, fullModel.servoFrameIntervalMs);
+      log('log', 'Tripod servo gait started');
+    }
+
+    function fullModelRotateInLegPlane(outward, vertical, angleRad) {
+      return outward.clone().multiplyScalar(Math.cos(angleRad))
+        .add(vertical.clone().multiplyScalar(Math.sin(angleRad)));
+    }
+
+    function scheduleFullKinematicModelRender() {
+      if (!fullModel.three || fullModel.renderQueued) return;
+      fullModel.renderQueued = true;
+      requestAnimationFrame(() => {
+        fullModel.renderQueued = false;
+        renderFullKinematicModel();
+      });
+    }
+
+    function renderFullKinematicModel() {
+      if (!fullModel.three || !window.THREE) return;
+      const points = getFullModelBasePoints();
+      const bodyLines = fullModel.three.bodyLines;
+      const radialLines = fullModel.three.radialLines;
+      const legs = fullModel.three.legs;
+      const joints = fullModel.three.joints;
+      const down = new THREE.Vector3(0, -1, 0);
+      const femurSecondaryRad = fullModel.femurSecondaryAngleDeg * Math.PI / 180;
+
+      points.forEach((point, index) => {
+        const legNumber = index + 1;
+        const angles = fullModelLegAngles(legNumber);
+        updateFullModelLine(bodyLines[index], point, points[(index + 1) % points.length]);
+        updateFullModelLine(radialLines[index], new THREE.Vector3(0, 0, 0), point);
+        joints[index].position.copy(point);
+
+        const outward = point.clone();
+        outward.y = 0;
+        if (outward.lengthSq() < 0.001) outward.set(1, 0, 0);
+        outward.normalize();
+        const coxaRad = (angles.coxa - 90) * Math.PI / 180;
+        const legForward = outward.clone().multiplyScalar(Math.cos(coxaRad))
+          .add(new THREE.Vector3(-outward.z, 0, outward.x).multiplyScalar(Math.sin(coxaRad)))
+          .normalize();
+        const side = new THREE.Vector3(-outward.z, 0, outward.x).normalize();
+        const femurRad = -(angles.femur - LEG_MOVER_FEMUR_HOME_DEG) * Math.PI / 180;
+        const tibiaRad = -(angles.tibia - LEG_MOVER_TIBIA_HOME_DEG) * Math.PI / 180;
+        const femurPrimaryDir = fullModelRotateInLegPlane(legForward, down, femurRad);
+        const femurSecondaryDir = fullModelRotateInLegPlane(legForward, down, femurRad + femurSecondaryRad);
+        const tibiaDir = fullModelRotateInLegPlane(legForward, down, femurRad + femurSecondaryRad + tibiaRad);
+        const footDir = fullModelRotateInLegPlane(legForward, down, femurRad + femurSecondaryRad + tibiaRad + Math.PI / 2);
+        const coxaEnd = point.clone().add(legForward.clone().multiplyScalar(fullModel.coxaLength));
+        const femurFixed = coxaEnd.clone().add(femurPrimaryDir.clone().multiplyScalar(fullModel.femurPrimaryLength));
+        const knee = coxaEnd.clone()
+          .add(femurPrimaryDir.clone().multiplyScalar(fullModel.femurPrimaryLength))
+          .add(femurSecondaryDir.clone().multiplyScalar(fullModel.femurSecondaryLength));
+        const ankle = knee.clone().add(tibiaDir.clone().multiplyScalar(fullModel.tibiaLength));
+        const effector = ankle.clone().add(footDir.clone().multiplyScalar(fullModel.footLength));
+
+        updateFullModelLine(legs[index].coxa, point, coxaEnd);
+        updateFullModelLine(legs[index].guideA, coxaEnd, knee);
+        updateFullModelLine(legs[index].femurPrimary, coxaEnd, femurFixed);
+        updateFullModelLine(legs[index].femurSecondary, femurFixed, knee);
+        updateFullModelLine(legs[index].guideB, knee, effector);
+        updateFullModelLine(legs[index].tibia, knee, ankle);
+        updateFullModelLine(legs[index].foot, ankle, effector);
+        legs[index].femurJoint.position.copy(coxaEnd);
+        legs[index].fixedJoint.position.copy(femurFixed);
+        legs[index].tibiaJoint.position.copy(knee);
+        legs[index].ankleJoint.position.copy(ankle);
+        legs[index].effectorJoint.position.copy(effector);
+        legs[index].marker.position.copy(point.clone().add(side.multiplyScalar(11)).add(new THREE.Vector3(0, 8, 0)));
+      });
+
+      const { renderer, scene, camera } = fullModel.three;
+      renderer.setClearColor(0x08131b, 1);
+      renderer.render(scene, camera);
+    }
+
+    function resizeFullKinematicModel() {
+      if (!fullModel.three || !fullModelView) return;
+      const width = fullModelView.clientWidth || 700;
+      const height = fullModelView.clientHeight || 520;
+      fullModel.three.camera.aspect = width / height;
+      fullModel.three.camera.updateProjectionMatrix();
+      fullModel.three.renderer.setSize(width, height);
+      renderFullKinematicModel();
+    }
+
+    function setupFullKinematicModel() {
+      if (!fullModelView || !window.THREE || !THREE.OrbitControls || fullModel.three) return;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x08131b);
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+      camera.position.set(240, 220, 300);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(fullModelView.clientWidth || 700, fullModelView.clientHeight || 520);
+      fullModelView.querySelectorAll('canvas[data-full-model-canvas="true"]').forEach((canvas) => canvas.remove());
+      renderer.domElement.dataset.fullModelCanvas = 'true';
+      fullModelView.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, -35, 0);
+      controls.enableDamping = false;
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.72));
+      const keyLight = new THREE.DirectionalLight(0xffffff, 0.85);
+      keyLight.position.set(160, 260, 180);
+      scene.add(keyLight);
+      const grid = new THREE.GridHelper(420, 14, 0x32566d, 0x183040);
+      grid.position.y = -96;
+      scene.add(grid);
+      scene.add(new THREE.AxesHelper(80));
+
+      const bodyFill = createFullModelBodyFill(getFullModelBasePoints());
+      scene.add(bodyFill);
+
+      const forwardArrow = createFullModelForwardArrow();
+      scene.add(forwardArrow);
+
+      const bodyLines = Array.from({ length: 6 }, () => createFullModelLine(0xa8b6c5, 0.9, false, 3.4));
+      const radialLines = Array.from({ length: 6 }, () => createFullModelLine(0x6f7f8f, 0.5, true, 1.8));
+      bodyLines.forEach((line) => addFullModelLineToScene(scene, line));
+      radialLines.forEach((line) => addFullModelLineToScene(scene, line));
+
+      const joints = Array.from({ length: 6 }, () => createFullModelJoint(0xd8f8ff, 5.5));
+      joints.forEach((joint) => scene.add(joint));
+
+      const legs = Array.from({ length: 6 }, () => {
+        const leg = {
+          coxa: createFullModelLine(0xb68cff, 1, false, 4.2),
+          guideA: createFullModelLine(0x2b66ff, 0.78, true, 2),
+          femurPrimary: createFullModelLine(0xffffff, 0.5, false, 3.4),
+          femurSecondary: createFullModelLine(0xffffff, 0.5, false, 3.4),
+          guideB: createFullModelLine(0x2b66ff, 0.78, true, 2),
+          tibia: createFullModelLine(0x4fc3f7, 1, false, 4),
+          foot: createFullModelLine(0xf5a623, 1, false, 4),
+          femurJoint: createFullModelJoint(0xd8f8ff, 6.2),
+          fixedJoint: createFullModelJoint(0x2b66ff, 3.7),
+          tibiaJoint: createFullModelJoint(0xd8f8ff, 6.2),
+          ankleJoint: createFullModelJoint(0x2b66ff, 3.7),
+          effectorJoint: createFullModelJoint(0xf5a623, 4.6),
+          marker: createFullModelJoint(0x2b66ff, 2.8)
+        };
+        Object.entries(leg).forEach(([name, part]) => {
+          if (part instanceof THREE.Mesh) scene.add(part);
+          else addFullModelLineToScene(scene, part);
+        });
+        return leg;
+      });
+
+      fullModel.three = { scene, camera, renderer, controls, bodyFill, forwardArrow, bodyLines, radialLines, joints, legs };
+      controls.addEventListener('change', renderFullKinematicModel);
+      window.addEventListener('resize', resizeFullKinematicModel);
+      resizeFullKinematicModel();
+      renderFullKinematicModel();
+    }
+
+    function setupGaitPreviewControls() {
+      updateGaitPreviewLabels();
+
+      if (gaitDirectionPad) {
+        const updateFromPointer = (event) => {
+          event.preventDefault();
+          setGaitDirection(gaitDirectionFromPointer(event));
+        };
+
+        gaitDirectionPad.addEventListener('pointerdown', (event) => {
+          gaitDirectionPad.setPointerCapture(event.pointerId);
+          updateFromPointer(event);
+        });
+
+        gaitDirectionPad.addEventListener('pointermove', (event) => {
+          if (gaitDirectionPad.hasPointerCapture(event.pointerId)) {
+            updateFromPointer(event);
+          }
+        });
+
+        gaitDirectionPad.addEventListener('keydown', (event) => {
+          const step = event.shiftKey ? 15 : 5;
+          const current = Number(gaitDirection?.value || 0);
+          const keyAngles = {
+            ArrowUp: 0,
+            ArrowRight: 90,
+            ArrowDown: 180,
+            ArrowLeft: -90
+          };
+
+          if (event.key in keyAngles) {
+            event.preventDefault();
+            setGaitDirection(keyAngles[event.key]);
+          } else if (event.key === 'PageUp') {
+            event.preventDefault();
+            setGaitDirection(current + step);
+          } else if (event.key === 'PageDown') {
+            event.preventDefault();
+            setGaitDirection(current - step);
+          } else if (event.key === 'Home') {
+            event.preventDefault();
+            setGaitDirection(0);
+          }
+        });
+      }
+
+      gaitPreviewPlay?.addEventListener('click', () => {
+        setTripodPreviewPlaying(!fullModel.previewPlaying);
+      });
+
+      gaitPreviewApply?.addEventListener('click', () => {
+        setTripodPreviewPlaying(false);
+        applyTripodPreviewToSliders();
+      });
+
+      gaitSendPose?.addEventListener('click', () => {
+        sendCurrentSliderPose();
+      });
+
+      gaitServoPlay?.addEventListener('click', () => {
+        playTripodServoGait();
+      });
+
+      gaitServoStop?.addEventListener('click', () => {
+        stopTripodServoGait();
+      });
+
+      gaitPreviewReset?.addEventListener('click', () => {
+        stopTripodServoGait('');
+        resetTripodPreview();
+      });
+
+      gaitPhase?.addEventListener('input', () => {
+        stopTripodServoGait('');
+        setTripodPreviewPlaying(false);
+        applyTripodPreviewFrame(Number(gaitPhase.value || 0) / 100);
+      });
+
+      [gaitDirection, gaitStride, gaitLift, gaitSpeed].forEach((control) => {
+        control?.addEventListener('input', () => {
+          if (fullModel.servoPlaying) {
+            updateServoGaitButtons();
+            return;
+          }
+          updateGaitPreviewLabels();
+          if (fullModel.previewActive) {
+            applyTripodPreviewFrame(fullModel.previewPhase);
+          }
+        });
+      });
+
+      updateServoGaitButtons();
     }
 
     function localLegPointToWorld(point) {
@@ -1529,6 +2624,25 @@
 
     function setLegPath(path, start, end) {
       path.setAttribute('d', `M ${start.x} ${start.y} L ${end.x} ${end.y}`);
+    }
+
+    function displayPointWithGround(point, offsetY = legMover.groundOffsetY) {
+      return {
+        x: point.x,
+        y: point.y + offsetY
+      };
+    }
+
+    function getGroundDisplayOffset(points) {
+      const lowestY = Math.max(...points.map((point) => point.y));
+      return legMover.groundY - lowestY;
+    }
+
+    function pointFromGroundDisplay(point) {
+      return {
+        x: point.x,
+        y: point.y - legMover.groundOffsetY
+      };
     }
 
     function setLegMover3d(enabled) {
@@ -1609,16 +2723,18 @@
 
     function targetFromKneeAndTibia(knee, tibiaRad) {
       const ankle = ankleFromKneeAndTibia(knee, tibiaRad);
+      const absoluteTibiaRad = getTibiaReferenceRadians(knee) + tibiaRad;
       return {
-        x: ankle.x + Math.cos(tibiaRad + Math.PI / 2) * legMover.linkC,
-        y: ankle.y + Math.sin(tibiaRad + Math.PI / 2) * legMover.linkC
+        x: ankle.x + Math.cos(absoluteTibiaRad + Math.PI / 2) * legMover.linkC,
+        y: ankle.y + Math.sin(absoluteTibiaRad + Math.PI / 2) * legMover.linkC
       };
     }
 
     function ankleFromKneeAndTibia(knee, tibiaRad) {
+      const absoluteTibiaRad = getTibiaReferenceRadians(knee) + tibiaRad;
       return {
-        x: knee.x + Math.cos(tibiaRad) * legMover.linkB,
-        y: knee.y + Math.sin(tibiaRad) * legMover.linkB
+        x: knee.x + Math.cos(absoluteTibiaRad) * legMover.linkB,
+        y: knee.y + Math.sin(absoluteTibiaRad) * legMover.linkB
       };
     }
 
@@ -1634,8 +2750,12 @@
       return Math.max(0, Math.min(180, Math.round(angle)));
     }
 
+    function isAtServoLimit(angle) {
+      return angle <= 0 || angle >= 180;
+    }
+
     function getLegServoAngles(knee, target) {
-      const femurRad = Math.atan2(knee.y - legMover.base.y, knee.x - legMover.base.x);
+      const femurRad = getFemurRadians(knee);
       const tibiaRad = getTibiaRadians(knee, target);
       const femurGeometryDeg = -(femurRad * 180 / Math.PI);
       const tibiaGeometryDeg = -(tibiaRad * 180 / Math.PI);
@@ -1649,6 +2769,33 @@
       const angles = getLegServoAngles(knee, target);
       return angles.femur >= 0 && angles.femur <= 180 &&
              angles.tibia >= 0 && angles.tibia <= 180;
+    }
+
+    function femurRadiansFromServoAngle(angle) {
+      return -(angle - LEG_MOVER_FEMUR_HOME_DEG) * Math.PI / 180;
+    }
+
+    function solveLimitedLegPose(targetPoint, preferredKnee = null) {
+      const target = clampLegTarget(targetPoint);
+      const knee = solveKneeForTarget(target, preferredKnee);
+      if (isServoLimitedPose(knee, target)) {
+        return { knee, target };
+      }
+
+      const angles = getLegServoAngles(knee, target);
+      if (angles.femur < 0 || angles.femur > 180) {
+        const clampedFemur = angles.femur < 0 ? 0 : 180;
+        const limitedKnee = kneeFromFemur(femurRadiansFromServoAngle(clampedFemur));
+        const limitedTarget = pointAtRadius(limitedKnee, targetPoint, getLowerAssemblyReach());
+        if (isServoLimitedPose(limitedKnee, limitedTarget)) {
+          return {
+            knee: limitedKnee,
+            target: limitedTarget
+          };
+        }
+      }
+
+      return null;
     }
 
     function solveKneeForTarget(target, preferredKnee = null) {
@@ -1721,22 +2868,55 @@
       legViewTools?.classList.toggle('visible', is3d);
 
       if (is3d) {
+        legMover.groundOffsetY = 0;
         renderLeg3dScene(pose, ankle);
       } else {
-        const screenPose = {
+        const useGroundConstraint = shouldUseLegGround();
+        const rawScreenPose = {
           root: getCoxaRoot(),
           base: legMover.base,
           knee: pose.knee,
           ankle,
           target: pose.target
         };
+        const rawFemurShape = getFemurShapePoints(rawScreenPose.knee);
+        legMover.groundOffsetY = useGroundConstraint
+          ? getGroundDisplayOffset([
+              rawScreenPose.base,
+              rawFemurShape.fixed,
+              rawScreenPose.knee,
+              rawScreenPose.ankle,
+              rawScreenPose.target
+            ])
+          : 0;
+        const screenPose = {
+          root: displayPointWithGround(rawScreenPose.root),
+          base: displayPointWithGround(rawScreenPose.base),
+          knee: displayPointWithGround(rawScreenPose.knee),
+          ankle: displayPointWithGround(rawScreenPose.ankle),
+          target: displayPointWithGround(rawScreenPose.target)
+        };
+        const femurShape = {
+          fixed: displayPointWithGround(rawFemurShape.fixed)
+        };
 
-        setLegPath(legLinkA, screenPose.base, screenPose.knee);
-        setLegPath(legLinkB, screenPose.knee, screenPose.ankle);
-        setLegPath(legLinkC, screenPose.ankle, screenPose.target);
+        if (legGroundLine) {
+          legGroundLine.classList.toggle('leg-hidden', !useGroundConstraint);
+          legGroundLine.setAttribute('y1', legMover.groundY);
+          legGroundLine.setAttribute('y2', legMover.groundY);
+        }
+
+        setLegPath(legGuideA, screenPose.base, screenPose.knee);
+        setLegPath(legGuideB, screenPose.knee, screenPose.target);
+        setLegPath(legLinkA, screenPose.base, femurShape.fixed);
+        setLegPath(legLinkB, femurShape.fixed, screenPose.knee);
+        legLinkC.setAttribute('d', `M ${screenPose.knee.x} ${screenPose.knee.y} L ${screenPose.ankle.x} ${screenPose.ankle.y} L ${screenPose.target.x} ${screenPose.target.y}`);
+        legFemurFixedDot.setAttribute('cx', femurShape.fixed.x);
+        legFemurFixedDot.setAttribute('cy', femurShape.fixed.y);
         legKneeDot.setAttribute('cx', screenPose.knee.x);
         legKneeDot.setAttribute('cy', screenPose.knee.y);
         legKneeDot.classList.toggle('locked', legMover.kneeLocked);
+        legKneeDot.classList.toggle('limit', isAtServoLimit(pose.tibiaDeg));
         legAnkleDot.setAttribute('cx', screenPose.ankle.x);
         legAnkleDot.setAttribute('cy', screenPose.ankle.y);
         legEffectorDot.setAttribute('cx', screenPose.target.x);
@@ -1744,24 +2924,28 @@
         legBaseDot.setAttribute('cx', screenPose.base.x);
         legBaseDot.setAttribute('cy', screenPose.base.y);
         legBaseDot.classList.toggle('locked', legMover.baseLocked);
+        legBaseDot.classList.toggle('limit', isAtServoLimit(pose.femurDeg));
 
         setLegPath(legLinkCoxa, screenPose.root, screenPose.base);
         legRootDot.setAttribute('cx', screenPose.root.x);
         legRootDot.setAttribute('cy', screenPose.root.y);
         legRootDot.classList.toggle('locked', legMover.coxaLocked);
+        legRootDot.classList.toggle('limit', isAtServoLimit(coxaDeg));
         legLinkCoxa.classList.add('leg-hidden');
         legRootDot.classList.add('leg-hidden');
       }
 
       const localX = Math.round(pose.target.x - legMover.base.x);
       const localY = Math.round(legMover.base.y - pose.target.y);
-      const worldTarget = is3d ? localLegPointToWorld3(pose.target) : null;
+      const worldTarget = is3d ? localLegPointToWorld3(pose.target, false) : null;
       legMoverCoxa.textContent = `${coxaDeg} deg`;
       legMoverFemur.textContent = `${pose.femurDeg} deg`;
       legMoverTibia.textContent = `${pose.tibiaDeg} deg`;
       legMoverPoint.textContent = is3d
         ? `${Math.round(worldTarget.x)}, ${Math.round(worldTarget.y)}, ${Math.round(worldTarget.z)}`
         : `${localX}, ${localY}`;
+      scheduleFullKinematicModelRender();
+      return pose;
     }
 
     function getSvgPoint(event) {
@@ -1772,7 +2956,7 @@
     }
 
     function getLegEditPoint(event) {
-      if (!legMover.is3d) return getSvgPoint(event);
+      if (!legMover.is3d) return pointFromGroundDisplay(getSvgPoint(event));
       if (legMover.dragTarget === 'effector') {
         return free3dTargetFromPointer(event) || legMover.target;
       }
@@ -1853,9 +3037,10 @@
           legMover.target = target;
         } else if (legMover.kneeLocked && legMover.knee) {
           const tibiaRad = legMover.lockedTibiaRad ?? getTibiaRadians(legMover.knee, legMover.target);
+          const absoluteTibiaRad = getTibiaReferenceRadians(legMover.knee) + tibiaRad;
           const tibiaVector = {
-            x: Math.cos(tibiaRad) * legMover.linkB + Math.cos(tibiaRad + Math.PI / 2) * legMover.linkC,
-            y: Math.sin(tibiaRad) * legMover.linkB + Math.sin(tibiaRad + Math.PI / 2) * legMover.linkC
+            x: Math.cos(absoluteTibiaRad) * legMover.linkB + Math.cos(absoluteTibiaRad + Math.PI / 2) * legMover.linkC,
+            y: Math.sin(absoluteTibiaRad) * legMover.linkB + Math.sin(absoluteTibiaRad + Math.PI / 2) * legMover.linkC
           };
           const desiredKnee = {
             x: point.x - tibiaVector.x,
@@ -1867,19 +3052,22 @@
           legMover.knee = knee;
           legMover.target = target;
         } else if (legMover.knee) {
-          const target = clampLegTarget(point);
-          const knee = solveKneeForTarget(target, legMover.knee);
-          if (!isServoLimitedPose(knee, target)) return;
-          legMover.knee = knee;
-          legMover.target = target;
+          const pose = solveLimitedLegPose(point, legMover.knee);
+          if (!pose) return;
+          legMover.knee = pose.knee;
+          legMover.target = pose.target;
         } else {
-          const target = clampLegTarget(point);
-          const knee = solveKneeForTarget(target);
-          if (!isServoLimitedPose(knee, target)) return;
-          legMover.target = target;
+          const pose = solveLimitedLegPose(point);
+          if (!pose) return;
+          legMover.knee = pose.knee;
+          legMover.target = pose.target;
         }
       }
-      scheduleLegMoverRender();
+      if (legMover.dragging) {
+        renderLegMoverDuringDrag();
+      } else {
+        scheduleLegMoverRender();
+      }
       scheduleLegMoverSend(false);
     }
 
@@ -1940,8 +3128,8 @@
             : null;
           renderLegMover();
         } else {
-          renderLegMover();
-          syncSlidersFromLegMoverSilent();
+          const pose = renderLegMover();
+          if (pose) syncSlidersFromLegMoverPose(pose);
           scheduleLegMoverSend(true);
         }
 
@@ -2032,8 +3220,8 @@
         legMover.dragPointerStart = null;
         legMover.dragPointerMoved = false;
         legMover.pendingSend = false;
-        renderLegMover();
-        syncSlidersFromLegMoverSilent();
+        const pose = renderLegMover();
+        if (pose) syncSlidersFromLegMoverPose(pose);
         if (movedDuringDrag) {
           scheduleLegMoverSend(true);
         }
@@ -2103,8 +3291,8 @@
         if (!movedDuringDrag && (pickedJoint === 'root' || pickedJoint === 'base' || pickedJoint === 'knee')) {
           toggleLeg3dJointLock(pickedJoint);
         } else if (movedDuringDrag) {
-          renderLegMover();
-          syncSlidersFromLegMoverSilent();
+          const pose = renderLegMover();
+          if (pose) syncSlidersFromLegMoverPose(pose);
           scheduleLegMoverSend(true);
         }
 
@@ -2129,22 +3317,36 @@
       });
 
       legMoverReset.addEventListener('click', () => {
-        const kneeX = legMover.base.x + legMover.linkA;
-        const kneeY = legMover.base.y;
         legMover.coxaLocked = false;
         legMover.lockedCoxaAngle = null;
         legMover.baseLocked = false;
         legMover.lockedFemurRad = null;
         legMover.kneeLocked = false;
         legMover.lockedTibiaRad = null;
-        legMover.knee = { x: kneeX, y: kneeY };
-        legMover.target = targetFromKneeAndTibia(legMover.knee, 0);
+        legMover.knee = kneeFromFemur(0);
+        legMover.target = targetFromKneeAndTibia(legMover.knee, -(LEG_UI_HOME_TIBIA_DEG - LEG_MOVER_TIBIA_HOME_DEG) * Math.PI / 180);
         renderLegMover();
+        getLegMoverServoPairs().forEach((pair) => {
+          setServoUi(pair.coxa, 90);
+          setServoUi(pair.femur, 90);
+          setServoUi(pair.tibia, LEG_UI_HOME_TIBIA_DEG);
+        });
         syncSlidersFromLegMover(true);
       });
 
       legMoverLeg.addEventListener('change', () => {
+        updateLegGroundControlState();
+        if (!shouldUseLegGround()) {
+          legMover.groundOffsetY = 0;
+        }
         syncLegMoverFromSliders();
+      });
+
+      legMoverGround?.addEventListener('change', () => {
+        if (!shouldUseLegGround()) {
+          legMover.groundOffsetY = 0;
+        }
+        renderLegMover();
       });
 
       legMover3d.addEventListener('change', () => {
@@ -2160,6 +3362,7 @@
       legViewZoomOut?.addEventListener('click', () => adjustLegView({ zoom: 0.9 }));
       legViewReset?.addEventListener('click', () => adjustLegView({ reset: true }));
 
+      updateLegGroundControlState();
       renderLegMover();
       syncSlidersFromLegMover(false);
     }
@@ -2175,7 +3378,7 @@
       }
 
       setServoUi(idx, angle);
-      if (idx === pair.coxa || idx === pair.femur || idx === pair.tibia) {
+      if (isLegMoverServoIdx(idx)) {
         syncLegMoverFromSliders();
       }
       if (sendServoAngle(idx, angle)) {
@@ -2199,7 +3402,7 @@
         }
 
         setServoUi(idx, angle);
-        if (idx === pair.coxa || idx === pair.femur || idx === pair.tibia) {
+        if (isLegMoverServoIdx(idx)) {
           syncLegMoverFromSliders();
         }
         if (sendServoAngle(idx, angle)) sent++;
@@ -2256,22 +3459,32 @@
     });
 
     // ---------- GLOBAL COMMANDS ----------
-    window.centerAllServos = function() {
+    window.Home_Position = function() {
+      stopTripodServoGait('');
+      setTripodPreviewPlaying(false);
+      let sent = 0;
       for (let i = 0; i < NUM_SERVOS; i++) {
-        setServoUi(i, 90);
+        const homeAngle = i % 3 === 2 ? LEG_UI_HOME_TIBIA_DEG : 90;
+        setServoUi(i, homeAngle);
+        if (sendServoAngle(i, homeAngle)) sent++;
       }
       for (let i = 0; i < JOINT_SERVO_GROUPS.length; i++) {
         const groupSlider = document.getElementById('group-sl-' + i);
         const groupAngle = document.getElementById('group-ang-' + i);
-        if (groupSlider) groupSlider.value = 90;
-        if (groupAngle) groupAngle.textContent = '90 deg';
+        const homeAngle = i === 2 ? LEG_UI_HOME_TIBIA_DEG : 90;
+        if (groupSlider) groupSlider.value = homeAngle;
+        if (groupAngle) groupAngle.textContent = `${homeAngle} deg`;
       }
+      legMover.lastSentAngles = {};
       syncLegMoverFromSliders();
-      wsSend({ command: 'centerAll' });
-      log('log', 'Center All command sent');
+      log('log', `Home position sent (${sent} servos)`);
     };
 
     window.sendCmd = function(obj) {
+      if (obj?.command === 'emergencyStop' || obj?.cmd === 'emergencyStop') {
+        stopTripodServoGait('Tripod servo gait stopped: E-STOP');
+        setTripodPreviewPlaying(false);
+      }
       if (!wsSend(obj)) log('error', 'Command failed - not connected');
     };
 
@@ -2329,8 +3542,13 @@
     // Initialize grid and UI
     buildLegGrid();
     setupLegMover();
+    setupFullKinematicModel();
+    setupGaitPreviewControls();
     updateMacroList();
     updateConnectionUI(false);
+    if (window.HexabotGaits) {
+      log('log', 'Gait module loaded: tripod gait calculations ready');
+    }
     log('log', 'Hexabot dashboard ready. Connect to your ESP.');
   })();
 </script>
