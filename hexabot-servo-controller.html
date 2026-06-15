@@ -946,7 +946,7 @@
           <div class="group-control-grid" style="margin-top: 0.8rem;">
             <div class="group-control">
               <div class="group-control-header">
-                <span>Tripod Preview</span>
+                <span>Gait Preview</span>
                 <span id="gait-preview-state" class="angle-badge">Live</span>
               </div>
               <div class="row" style="gap: 0.5rem;">
@@ -969,6 +969,11 @@
                 <span>Direction vs Forward</span>
                 <span id="gait-direction-value" class="angle-badge">0 deg</span>
               </div>
+              <select id="gait-type" aria-label="Walking gait type" style="width: 100%; margin-bottom: 0.75rem;">
+                <option value="tripod">Tripod</option>
+                <option value="ripple">Ripple</option>
+                <option value="wave">Wave</option>
+              </select>
               <div id="gait-direction-pad" class="analog-direction" role="slider" aria-label="Gait direction" aria-valuemin="-180" aria-valuemax="180" aria-valuenow="0" tabindex="0">
                 <span id="gait-direction-knob" class="analog-direction-knob"></span>
               </div>
@@ -978,16 +983,23 @@
             <div class="group-control">
               <div class="group-control-header">
                 <span>Stride</span>
-                <span id="gait-stride-value" class="angle-badge">130 mm</span>
+                <span id="gait-stride-value" class="angle-badge">210 mm</span>
               </div>
-              <input id="gait-stride" type="range" min="5" max="150" value="130" class="slider">
+              <input id="gait-stride" type="range" min="5" max="300" value="210" class="slider">
             </div>
             <div class="group-control">
               <div class="group-control-header">
                 <span>Lift</span>
-                <span id="gait-lift-value" class="angle-badge">40 mm</span>
+                <span id="gait-lift-value" class="angle-badge">130 mm</span>
               </div>
-              <input id="gait-lift" type="range" min="0" max="70" value="40" class="slider">
+              <input id="gait-lift" type="range" min="0" max="150" value="130" class="slider">
+            </div>
+            <div class="group-control">
+              <div class="group-control-header">
+                <span>Walk Height</span>
+                <span id="gait-walk-height-value" class="angle-badge">0 mm</span>
+              </div>
+              <input id="gait-walk-height" type="range" min="-60" max="60" value="0" class="slider">
             </div>
             <div class="group-control">
               <div class="group-control-header">
@@ -1122,6 +1134,7 @@
     };
     const CALIBRATION_STORAGE_KEY = 'hexabot-servo-calibration-v1';
     const lastCommandByServo = {};
+    const homeReturnTimers = [];
     let servoCalibrationOffsets = loadServoCalibrationOffsets();
     let calibrationDraftOffsets = { ...servoCalibrationOffsets };
     let macroFrames = [];
@@ -1200,6 +1213,7 @@
     const gaitPreviewReset = document.getElementById('gait-preview-reset');
     const gaitPhase = document.getElementById('gait-phase');
     const gaitPhaseValue = document.getElementById('gait-phase-value');
+    const gaitType = document.getElementById('gait-type');
     const gaitDirection = document.getElementById('gait-direction');
     const gaitDirectionPower = document.getElementById('gait-direction-power');
     const gaitDirectionValue = document.getElementById('gait-direction-value');
@@ -1209,6 +1223,8 @@
     const gaitStrideValue = document.getElementById('gait-stride-value');
     const gaitLift = document.getElementById('gait-lift');
     const gaitLiftValue = document.getElementById('gait-lift-value');
+    const gaitWalkHeight = document.getElementById('gait-walk-height');
+    const gaitWalkHeightValue = document.getElementById('gait-walk-height-value');
     const gaitSpeed = document.getElementById('gait-speed');
     const gaitSpeedValue = document.getElementById('gait-speed-value');
 
@@ -1337,13 +1353,13 @@
         if (onMessage) onMessage(event.data);
       };
       ws.onclose = () => {
-        stopTripodServoGait('Tripod servo gait stopped: websocket closed');
+        stopTripodServoGait('Servo gait stopped: websocket closed');
         updateConnectionUI(false);
         log('log', 'WebSocket closed');
         if (onClose) onClose();
       };
       ws.onerror = (err) => {
-        stopTripodServoGait('Tripod servo gait stopped: websocket error');
+        stopTripodServoGait('Servo gait stopped: websocket error');
         log('error', 'WebSocket error');
         updateConnectionUI(false);
       };
@@ -1442,7 +1458,7 @@
       if (previous && Math.abs(previous.commandAngle - angle) < 1.5) {
         return previous.uiAngle;
       }
-      return Math.max(0, Math.min(180, adjustedAngle - (SERVO_UI_COMMAND_OFFSETS[idx] || 0)));
+      return Math.max(0, Math.min(180, adjustedAngle - getServoCommandOffset(idx) - (SERVO_UI_COMMAND_OFFSETS[idx] || 0)));
     }
 
     function isAllLegsSelected() {
@@ -1735,6 +1751,22 @@
           uiAngle: readServoSliderAngle(idx)
         };
         log('log', `Calibration servo ${idx}: model ${Math.round(referenceAngle)} deg, trim ${offset >= 0 ? '+' : ''}${offset} deg`);
+      }
+      return sent;
+    }
+
+    function clearHomeReturnTimers() {
+      while (homeReturnTimers.length) {
+        clearTimeout(homeReturnTimers.pop());
+      }
+    }
+
+    function sendHomeServoCommands() {
+      if (!wsConnected) return 0;
+      let sent = 0;
+      for (let i = 0; i < NUM_SERVOS; i++) {
+        const homeAngle = i % 3 === 2 ? LEG_UI_HOME_TIBIA_DEG : 90;
+        if (sendServoAngle(i, homeAngle)) sent++;
       }
       return sent;
     }
@@ -2393,13 +2425,38 @@
 
     function getGaitPreviewOptions() {
       const power = Number(gaitDirectionPower?.value || 0) / 100;
-      const requestedStride = Number(gaitStride?.value || 130);
+      const requestedStride = Number(gaitStride?.value || 210);
+      const walkHeight = Number(gaitWalkHeight?.value || 0);
+      const baseTargets = window.HexabotGaits?.defaultFootTargets();
+      if (baseTargets && walkHeight !== 0) {
+        for (let leg = 1; leg <= 6; leg++) {
+          baseTargets[leg].y -= walkHeight;
+        }
+      }
       return {
         directionDeg: Number(gaitDirection?.value || 0),
         strideLength: Math.max(0, requestedStride * power),
-        liftHeight: Number(gaitLift?.value || 40),
-        durationMs: Number(gaitSpeed?.value || 2000)
+        liftHeight: Number(gaitLift?.value || 130),
+        durationMs: Number(gaitSpeed?.value || 2000),
+        baseTargets: baseTargets || undefined
       };
+    }
+
+    function getSelectedGaitType() {
+      return gaitType?.value || 'tripod';
+    }
+
+    function getSelectedGaitLabel() {
+      const type = getSelectedGaitType();
+      return window.HexabotGaits?.gaitTypes?.[type]?.label || type.charAt(0).toUpperCase() + type.slice(1);
+    }
+
+    function getSelectedGaitFrame(phase) {
+      if (!window.HexabotGaits) return null;
+      if (window.HexabotGaits.gaitFrame) {
+        return window.HexabotGaits.gaitFrame(getSelectedGaitType(), phase, getGaitPreviewOptions());
+      }
+      return window.HexabotGaits.tripodFrame(phase, getGaitPreviewOptions());
     }
 
     function clampGaitDirection(angle) {
@@ -2463,8 +2520,9 @@
           ? `${Number(gaitDirection?.value || 0)} deg · ${Math.round(power)}%`
           : 'Center';
       }
-      if (gaitStrideValue) gaitStrideValue.textContent = `${Number(gaitStride?.value || 130)} mm`;
-      if (gaitLiftValue) gaitLiftValue.textContent = `${Number(gaitLift?.value || 40)} mm`;
+      if (gaitStrideValue) gaitStrideValue.textContent = `${Number(gaitStride?.value || 210)} mm`;
+      if (gaitLiftValue) gaitLiftValue.textContent = `${Number(gaitLift?.value || 130)} mm`;
+      if (gaitWalkHeightValue) gaitWalkHeightValue.textContent = `${Number(gaitWalkHeight?.value || 0)} mm`;
       if (gaitSpeedValue) gaitSpeedValue.textContent = `${(Number(gaitSpeed?.value || 2000) / 1000).toFixed(1)} s`;
       if (gaitPreviewState) {
         gaitPreviewState.textContent = fullModel.previewActive
@@ -2481,7 +2539,8 @@
 
     function applyTripodPreviewFrame(phase = fullModel.previewPhase) {
       if (!window.HexabotGaits) return;
-      const frame = window.HexabotGaits.tripodFrame(phase, getGaitPreviewOptions());
+      const frame = getSelectedGaitFrame(phase);
+      if (!frame) return;
       fullModel.previewAngles = {};
       for (let leg = 1; leg <= 6; leg++) {
         fullModel.previewAngles[leg] = frame.legs[leg].angles;
@@ -2572,7 +2631,7 @@
       fullModel.previewActive = false;
       fullModel.previewAngles = null;
       updateGaitPreviewLabels();
-      log('log', 'Tripod preview copied to sliders (no servo commands sent)');
+      log('log', `${getSelectedGaitLabel()} preview copied to sliders (no servo commands sent)`);
     }
 
     function sendCurrentSliderPose() {
@@ -2601,7 +2660,7 @@
       }
     }
 
-    function stopTripodServoGait(reason = 'Tripod servo gait stopped') {
+    function stopTripodServoGait(reason = 'Servo gait stopped') {
       if (fullModel.servoTimer) {
         clearInterval(fullModel.servoTimer);
         fullModel.servoTimer = null;
@@ -2622,7 +2681,7 @@
       }
       if (!wsConnected) {
         if (source !== 'joystick') {
-          log('error', 'Connect first before playing tripod gait on servos');
+          log('error', 'Connect first before playing gait on servos');
         }
         return;
       }
@@ -2635,12 +2694,14 @@
 
       const tick = () => {
         if (!wsConnected) {
-          stopTripodServoGait('Tripod servo gait stopped: websocket disconnected');
+          stopTripodServoGait('Servo gait stopped: websocket disconnected');
           return;
         }
         const options = getGaitPreviewOptions();
         const phase = ((performance.now() - fullModel.servoStartedAt) % options.durationMs) / options.durationMs;
-        const frame = window.HexabotGaits.tripodFrame(phase, options);
+        const frame = window.HexabotGaits.gaitFrame
+          ? window.HexabotGaits.gaitFrame(getSelectedGaitType(), phase, options)
+          : window.HexabotGaits.tripodFrame(phase, options);
         const anglesByLeg = {};
         for (let leg = 1; leg <= 6; leg++) {
           anglesByLeg[leg] = frame.legs[leg].angles;
@@ -2656,16 +2717,16 @@
 
       tick();
       fullModel.servoTimer = setInterval(tick, fullModel.servoFrameIntervalMs);
-      log('log', source === 'joystick' ? 'Joystick gait started' : 'Tripod servo gait started');
+      log('log', source === 'joystick' ? `Joystick ${getSelectedGaitLabel()} gait started` : `${getSelectedGaitLabel()} servo gait started`);
     }
 
     function updateJoystickDrivenGait() {
       const power = Number(gaitDirectionPower?.value || 0);
       if (power <= 0) {
         if (fullModel.servoPlaying) {
-          stopTripodServoGait('Joystick released: movement stopped');
+          stopTripodServoGait('');
         }
-        resetTripodPreview();
+        sendHomePosition('Joystick released: returned to home');
         return;
       }
 
@@ -2938,17 +2999,31 @@
         applyTripodPreviewFrame(Number(gaitPhase.value || 0) / 100);
       });
 
-      [gaitDirection, gaitStride, gaitLift, gaitSpeed].forEach((control) => {
-        control?.addEventListener('input', () => {
-          if (fullModel.servoPlaying) {
-            updateServoGaitButtons();
-            return;
-          }
-          updateGaitPreviewLabels();
-          if (fullModel.previewActive) {
-            applyTripodPreviewFrame(fullModel.previewPhase);
-          }
-        });
+      const handleGaitControlChange = () => {
+        if (fullModel.servoPlaying) {
+          updateServoGaitButtons();
+          return;
+        }
+        updateGaitPreviewLabels();
+        if (fullModel.previewActive) {
+          applyTripodPreviewFrame(fullModel.previewPhase);
+        }
+      };
+
+      [gaitDirection, gaitStride, gaitLift, gaitWalkHeight, gaitSpeed].forEach((control) => {
+        control?.addEventListener('input', handleGaitControlChange);
+      });
+
+      gaitType?.addEventListener('change', () => {
+        if (fullModel.servoPlaying) {
+          updateServoGaitButtons();
+          return;
+        }
+        setTripodPreviewPlaying(false);
+        updateGaitPreviewLabels();
+        if (fullModel.previewActive) {
+          applyTripodPreviewFrame(fullModel.previewPhase);
+        }
       });
 
       updateServoGaitButtons();
@@ -3863,14 +3938,23 @@
     });
 
     // ---------- GLOBAL COMMANDS ----------
-    window.Home_Position = function() {
+    function sendHomePosition(message = 'Home position sent') {
       stopTripodServoGait('');
       setTripodPreviewPlaying(false);
-      let sent = 0;
+      clearHomeReturnTimers();
+      fullModel.previewActive = false;
+      fullModel.previewAngles = null;
+      fullModel.previewPhase = 0;
+      if (gaitPhase) gaitPhase.value = 0;
       for (let i = 0; i < NUM_SERVOS; i++) {
         const homeAngle = i % 3 === 2 ? LEG_UI_HOME_TIBIA_DEG : 90;
         setServoUi(i, homeAngle);
-        if (sendServoAngle(i, homeAngle)) sent++;
+      }
+      const sent = sendHomeServoCommands();
+      if (wsConnected) {
+        [160, 360].forEach((delay) => {
+          homeReturnTimers.push(setTimeout(sendHomeServoCommands, delay));
+        });
       }
       for (let i = 0; i < JOINT_SERVO_GROUPS.length; i++) {
         const groupSlider = document.getElementById('group-sl-' + i);
@@ -3881,12 +3965,17 @@
       }
       legMover.lastSentAngles = {};
       syncLegMoverFromSliders();
-      log('log', `Home position sent (${sent} servos)`);
+      scheduleFullKinematicModelRender();
+      log('log', wsConnected ? `${message} (${sent} servos)` : `${message} locally`);
+    }
+
+    window.Home_Position = function() {
+      sendHomePosition('Home position sent');
     };
 
     window.sendCmd = function(obj) {
       if (obj?.command === 'emergencyStop' || obj?.cmd === 'emergencyStop') {
-        stopTripodServoGait('Tripod servo gait stopped: E-STOP');
+        stopTripodServoGait('Servo gait stopped: E-STOP');
         setTripodPreviewPlaying(false);
       }
       if (!wsSend(obj)) log('error', 'Command failed - not connected');
@@ -3952,7 +4041,7 @@
     updateMacroList();
     updateConnectionUI(false);
     if (window.HexabotGaits) {
-      log('log', 'Gait module loaded: tripod gait calculations ready');
+      log('log', 'Gait module loaded: tripod, ripple, and wave ready');
     }
     log('log', 'Hexabot dashboard ready. Connect to your ESP.');
   })();

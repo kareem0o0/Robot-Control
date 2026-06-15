@@ -3,6 +3,7 @@
 
   const DEG_TO_RAD = Math.PI / 180;
   const RAD_TO_DEG = 180 / Math.PI;
+  const PHASE_EPSILON = 1e-6;
 
   const DEFAULT_CONFIG = {
     bodyWidth: 169.45,
@@ -24,6 +25,23 @@
     [1, 3, 5],
     [2, 4, 6]
   ];
+  const SEQUENCE_GAIT_ORDER = [1, 4, 2, 5, 3, 6];
+  const GAIT_TYPES = {
+    tripod: {
+      label: 'Tripod',
+      groups: TRIPOD_GROUPS
+    },
+    ripple: {
+      label: 'Ripple',
+      sequence: SEQUENCE_GAIT_ORDER,
+      swingFraction: 1 / 3
+    },
+    wave: {
+      label: 'Wave',
+      sequence: SEQUENCE_GAIT_ORDER,
+      swingFraction: 1 / 6
+    }
+  };
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -36,6 +54,11 @@
   function smoothStep(t) {
     const x = clamp(t, 0, 1);
     return x * x * (3 - 2 * x);
+  }
+
+  function wrapPhase(phase) {
+    const wrapped = ((phase % 1) + 1) % 1;
+    return wrapped > 1 - PHASE_EPSILON ? 0 : wrapped;
   }
 
   function vec(x = 0, y = 0, z = 0) {
@@ -205,7 +228,7 @@
   function tripodFootTarget(legNumber, phase, options, config) {
     const baseTargets = options.baseTargets || defaultFootTargets(config);
     const base = baseTargets[legNumber];
-    const localPhase = (phase + tripodPhaseOffset(legNumber)) % 1;
+    const localPhase = wrapPhase(phase + tripodPhaseOffset(legNumber));
     const stride = options.strideLength ?? 45;
     const lift = options.liftHeight ?? 28;
     const travel = bodyDirection(options.directionDeg ?? 0);
@@ -225,30 +248,129 @@
   }
 
   function tripodFrame(phase, options = {}, config = DEFAULT_CONFIG) {
+    const framePhase = wrapPhase(phase);
+    const frameOptions = {
+      ...options,
+      baseTargets: options.baseTargets || defaultFootTargets(config)
+    };
     const frame = {
-      phase,
+      type: 'tripod',
+      phase: framePhase,
       groups: TRIPOD_GROUPS.map((group) => group.slice()),
       legs: {}
     };
     for (let leg = 1; leg <= 6; leg++) {
-      const target = tripodFootTarget(leg, phase, options, config);
+      const target = tripodFootTarget(leg, framePhase, frameOptions, config);
       frame.legs[leg] = {
         footTarget: target,
         angles: footTargetToServoAngles(leg, target, config),
-        swing: ((phase + tripodPhaseOffset(leg)) % 1) >= 0.5
+        swing: wrapPhase(framePhase + tripodPhaseOffset(leg)) >= 0.5
       };
     }
     return frame;
   }
 
+  function sequencePhaseOffset(legNumber, sequence) {
+    const index = sequence.indexOf(legNumber);
+    return index < 0 ? 0 : index / sequence.length;
+  }
+
+  function isSequenceSwingPhase(localPhase, swingFraction) {
+    return localPhase < swingFraction - PHASE_EPSILON;
+  }
+
+  function sequenceFootTarget(legNumber, phase, options, config, definition) {
+    const baseTargets = options.baseTargets || defaultFootTargets(config);
+    const base = baseTargets[legNumber];
+    const stride = options.strideLength ?? 45;
+    const lift = options.liftHeight ?? 28;
+    const travel = bodyDirection(options.directionDeg ?? 0);
+    const swingFraction = clamp(definition.swingFraction, 0.08, 0.48);
+    const localPhase = wrapPhase(phase - sequencePhaseOffset(legNumber, definition.sequence));
+
+    if (stride <= 0.001) return base;
+
+    if (isSequenceSwingPhase(localPhase, swingFraction)) {
+      const t = localPhase / swingFraction;
+      const eased = smoothStep(t);
+      const liftProfile = Math.sin(Math.PI * t) * lift;
+      return add(
+        add(base, scale(travel, lerp(-stride / 2, stride / 2, eased))),
+        vec(0, liftProfile, 0)
+      );
+    }
+
+    const stanceT = (localPhase - swingFraction) / (1 - swingFraction);
+    return add(base, scale(travel, lerp(stride / 2, -stride / 2, stanceT)));
+  }
+
+  function sequenceFrame(type, phase, options = {}, config = DEFAULT_CONFIG) {
+    const definition = GAIT_TYPES[type] || GAIT_TYPES.wave;
+    const framePhase = wrapPhase(phase);
+    const frameOptions = {
+      ...options,
+      baseTargets: options.baseTargets || defaultFootTargets(config)
+    };
+    const frame = {
+      type,
+      phase: framePhase,
+      sequence: definition.sequence.slice(),
+      swingFraction: definition.swingFraction,
+      legs: {}
+    };
+    for (let leg = 1; leg <= 6; leg++) {
+      const localPhase = wrapPhase(framePhase - sequencePhaseOffset(leg, definition.sequence));
+      const target = sequenceFootTarget(leg, framePhase, frameOptions, config, definition);
+      frame.legs[leg] = {
+        footTarget: target,
+        angles: footTargetToServoAngles(leg, target, config),
+        swing: isSequenceSwingPhase(localPhase, definition.swingFraction),
+        localPhase
+      };
+    }
+    return frame;
+  }
+
+  function rippleFrame(phase, options = {}, config = DEFAULT_CONFIG) {
+    return sequenceFrame('ripple', phase, options, config);
+  }
+
+  function waveFrame(phase, options = {}, config = DEFAULT_CONFIG) {
+    return sequenceFrame('wave', phase, options, config);
+  }
+
+  function normalizeGaitType(type) {
+    return GAIT_TYPES[type] ? type : 'tripod';
+  }
+
+  function gaitFrame(type, phase, options = {}, config = DEFAULT_CONFIG) {
+    const gaitType = normalizeGaitType(type);
+    if (gaitType === 'tripod') return tripodFrame(phase, options, config);
+    if (gaitType === 'ripple') return rippleFrame(phase, options, config);
+    return waveFrame(phase, options, config);
+  }
+
   function generateTripodGait(options = {}, config = DEFAULT_CONFIG) {
+    return generateGait('tripod', options, config);
+  }
+
+  function generateRippleGait(options = {}, config = DEFAULT_CONFIG) {
+    return generateGait('ripple', options, config);
+  }
+
+  function generateWaveGait(options = {}, config = DEFAULT_CONFIG) {
+    return generateGait('wave', options, config);
+  }
+
+  function generateGait(type = 'tripod', options = {}, config = DEFAULT_CONFIG) {
+    const gaitType = normalizeGaitType(type);
     const steps = Math.max(2, options.steps ?? 24);
     const frames = [];
     for (let i = 0; i < steps; i++) {
-      frames.push(tripodFrame(i / steps, options, config));
+      frames.push(gaitFrame(gaitType, i / steps, options, config));
     }
     return {
-      type: 'tripod',
+      type: gaitType,
       durationMs: options.durationMs ?? 1200,
       frames
     };
@@ -256,7 +378,9 @@
 
   global.HexabotGaits = {
     config: DEFAULT_CONFIG,
+    gaitTypes: GAIT_TYPES,
     tripodGroups: TRIPOD_GROUPS,
+    sequenceGaitOrder: SEQUENCE_GAIT_ORDER.slice(),
     basePoints,
     legFrame,
     bodyDirection,
@@ -264,10 +388,18 @@
     defaultFootTargets,
     servoAnglesToFootTarget,
     footTargetToServoAngles,
+    gaitFrame,
     tripodFrame,
+    rippleFrame,
+    waveFrame,
+    generateGait,
     generateTripodGait,
+    generateRippleGait,
+    generateWaveGait,
     walking: {
-      tripod: generateTripodGait
+      tripod: generateTripodGait,
+      ripple: generateRippleGait,
+      wave: generateWaveGait
     }
   };
 })(window);
