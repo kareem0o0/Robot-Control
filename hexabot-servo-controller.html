@@ -345,6 +345,104 @@
       display: none;
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      background: rgba(5, 10, 14, 0.76);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-backdrop.hidden {
+      display: none;
+    }
+
+    .calibration-modal {
+      width: min(920px, 100%);
+      max-height: min(86vh, 780px);
+      overflow: auto;
+      background: var(--bg-card);
+      border: 1px solid #2a4457;
+      border-radius: var(--radius);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62);
+      padding: 1.2rem;
+    }
+
+    .calibration-modal-header,
+    .calibration-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .calibration-modal-header h3 {
+      margin: 0;
+    }
+
+    .calibration-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .calibration-servo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.6rem;
+    }
+
+    .calibration-servo-btn {
+      justify-content: space-between;
+      min-width: 0;
+      padding: 0.65rem 0.75rem;
+    }
+
+    .calibration-servo-btn.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(60, 207, 145, 0.16);
+    }
+
+    .calibration-servo-btn span {
+      white-space: nowrap;
+    }
+
+    .calibration-panel {
+      background: #0a141c;
+      border: 1px solid #1f3443;
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+    }
+
+    .calibration-panel label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin: 0.8rem 0 0.35rem;
+    }
+
+    .calibration-panel input,
+    .calibration-panel select {
+      width: 100%;
+    }
+
+    .calibration-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+      margin-top: 1rem;
+    }
+
+    .calibration-actions .btn,
+    .calibration-actions button {
+      justify-content: center;
+    }
+
     .macro-list {
       background: #0b1620;
       min-height: 50px;
@@ -667,6 +765,12 @@
       .leg-mover-layout {
         grid-template-columns: 1fr;
       }
+      .calibration-layout {
+        grid-template-columns: 1fr;
+      }
+      .calibration-servo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
       .back-dashboard,
       .status-led {
         justify-content: center;
@@ -849,7 +953,6 @@
                 <button class="btn btn-primary" id="gait-preview-play" style="justify-content: center;"><i class="fas fa-play"></i> Play</button>
                 <button class="btn" id="gait-preview-apply" style="justify-content: center;"><i class="fas fa-sliders-h"></i> Apply to Sliders</button>
                 <button class="btn btn-danger" id="gait-send-pose" style="justify-content: center;"><i class="fas fa-paper-plane"></i> Send Slider Pose</button>
-                <button class="btn btn-danger" id="gait-servo-play" style="justify-content: center;"><i class="fas fa-shoe-prints"></i> Play on Servos</button>
                 <button class="btn" id="gait-servo-stop" style="justify-content: center;"><i class="fas fa-hand-paper"></i> Stop Gait</button>
                 <button class="btn" id="gait-preview-reset" style="justify-content: center;"><i class="fas fa-stop"></i> Live Pose</button>
               </div>
@@ -920,6 +1023,7 @@
         <div class="row" style="flex-direction: column; align-items: stretch;">
           <button class="btn" id="builtin-led-btn" onclick="toggleBuiltinLed()" style="justify-content: center;"><i class="fas fa-lightbulb"></i> Built-in LED: OFF</button>
           <button class="btn" onclick="Home_Position()" style="justify-content: center;"><i class="fas fa-dot-circle"></i> Home Position</button>
+          <button class="btn" id="open-calibration" style="justify-content: center;"><i class="fas fa-wrench"></i> Motor Calibration</button>
           <button class="btn btn-danger" onclick="sendCmd({command:'emergencyStop'})" style="justify-content: center;"><i class="fas fa-skull-crosswalk"></i> E-STOP</button>
           <a class="btn" href="hexabot-model-viewer.html" style="justify-content: center; text-decoration: none;"><i class="fas fa-cube"></i> View Bot Model</a>
         </div>
@@ -937,6 +1041,42 @@
       
       <div style="font-size:0.75rem; color: #4b6377; text-align: right;">
         <i class="far fa-clock"></i> v2.0  -  Hexabot enhanced
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="calibration-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="calibration-title">
+  <div class="calibration-modal">
+    <div class="calibration-modal-header">
+      <h3 id="calibration-title"><i class="fas fa-wrench"></i> Motor Calibration</h3>
+      <button class="btn" id="calibration-close" aria-label="Close calibration"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="calibration-summary">
+      <span class="angle-badge" id="calibration-selected-label">Servo 0</span>
+      <span class="angle-badge" id="calibration-save-state">Draft</span>
+    </div>
+    <div class="calibration-layout">
+      <div class="calibration-servo-grid" id="calibration-servo-grid"></div>
+      <div class="calibration-panel">
+        <label for="calibration-servo-select">Motor</label>
+        <select id="calibration-servo-select"></select>
+
+        <label for="calibration-reference-angle">Model position to match</label>
+        <input id="calibration-reference-angle" type="number" min="0" max="180" value="90">
+
+        <label for="calibration-offset">Hardware trim offset</label>
+        <input id="calibration-offset" type="range" min="-60" max="60" value="0" class="slider">
+
+        <label for="calibration-offset-number">Offset degrees</label>
+        <input id="calibration-offset-number" type="number" min="-60" max="60" value="0">
+
+        <div class="calibration-actions">
+          <button class="btn btn-primary" id="calibration-send"><i class="fas fa-paper-plane"></i> Send Trim</button>
+          <button class="btn" id="calibration-use-slider"><i class="fas fa-crosshairs"></i> Use Slider</button>
+          <button class="btn" id="calibration-reset-motor"><i class="fas fa-undo"></i> Reset Motor</button>
+          <button class="btn btn-primary" id="calibration-save"><i class="fas fa-save"></i> Save</button>
+        </div>
       </div>
     </div>
   </div>
@@ -970,9 +1110,9 @@
       17: -45
     };
     // Per-servo silent backend tuning offsets.
-    // Edit these when a servo needs a different physical angle than the UI/model angle.
+    // Calibration changes these without changing UI/model angles.
     // Example: offset +20 means command 90 deg is sent to hardware as 110 deg before reverse mapping.
-    const SERVO_COMMAND_OFFSETS = {
+    const DEFAULT_SERVO_COMMAND_OFFSETS = {
       2: 20,  // Leg 1 Tibia: 90 -> 110
       5: 20,  // Leg 2 Tibia: 90 -> 110
       8: 20,  // Leg 3 Tibia: 90 -> 110
@@ -980,7 +1120,10 @@
       14: 10, // Leg 5 Tibia: 90 -> 100
       17: 10  // Leg 6 Tibia: 90 -> 100
     };
+    const CALIBRATION_STORAGE_KEY = 'hexabot-servo-calibration-v1';
     const lastCommandByServo = {};
+    let servoCalibrationOffsets = loadServoCalibrationOffsets();
+    let calibrationDraftOffsets = { ...servoCalibrationOffsets };
     let macroFrames = [];
     let ws = null;
     let wsConnected = false;
@@ -1003,6 +1146,20 @@
     const macroDelayInput = document.getElementById('macro-delay');
     const cmdInput = document.getElementById('cmd-input');
     const sendCmdBtn = document.getElementById('send-cmd-btn');
+    const openCalibrationBtn = document.getElementById('open-calibration');
+    const calibrationModal = document.getElementById('calibration-modal');
+    const calibrationClose = document.getElementById('calibration-close');
+    const calibrationServoGrid = document.getElementById('calibration-servo-grid');
+    const calibrationServoSelect = document.getElementById('calibration-servo-select');
+    const calibrationSelectedLabel = document.getElementById('calibration-selected-label');
+    const calibrationSaveState = document.getElementById('calibration-save-state');
+    const calibrationReferenceAngle = document.getElementById('calibration-reference-angle');
+    const calibrationOffset = document.getElementById('calibration-offset');
+    const calibrationOffsetNumber = document.getElementById('calibration-offset-number');
+    const calibrationSend = document.getElementById('calibration-send');
+    const calibrationUseSlider = document.getElementById('calibration-use-slider');
+    const calibrationResetMotor = document.getElementById('calibration-reset-motor');
+    const calibrationSave = document.getElementById('calibration-save');
     const legMoverSvg = document.getElementById('leg-mover-svg');
     const legMover3dView = document.getElementById('leg-mover-3d-view');
     const legMoverLeg = document.getElementById('leg-mover-leg');
@@ -1039,7 +1196,6 @@
     const gaitPreviewPlay = document.getElementById('gait-preview-play');
     const gaitPreviewApply = document.getElementById('gait-preview-apply');
     const gaitSendPose = document.getElementById('gait-send-pose');
-    const gaitServoPlay = document.getElementById('gait-servo-play');
     const gaitServoStop = document.getElementById('gait-servo-stop');
     const gaitPreviewReset = document.getElementById('gait-preview-reset');
     const gaitPhase = document.getElementById('gait-phase');
@@ -1130,6 +1286,11 @@
       servoFrameIntervalMs: 120
     };
 
+    const calibrationState = {
+      selectedServo: 0,
+      dirty: false
+    };
+
     // ---------- LOGGING & TERMINAL ----------
     function log(type, msg) {
       const entry = `[${new Date().toLocaleTimeString()}] ${msg}`;
@@ -1202,6 +1363,55 @@
       }
     }
 
+    function clampServoAngle(angle) {
+      return Math.max(0, Math.min(180, Number(angle) || 0));
+    }
+
+    function clampCalibrationOffset(offset) {
+      return Math.max(-60, Math.min(60, Math.round(Number(offset) || 0)));
+    }
+
+    function loadServoCalibrationOffsets() {
+      const offsets = {};
+      for (let idx = 0; idx < NUM_SERVOS; idx++) {
+        offsets[idx] = clampCalibrationOffset(DEFAULT_SERVO_COMMAND_OFFSETS[idx] || 0);
+      }
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(CALIBRATION_STORAGE_KEY) || '{}');
+        Object.keys(saved).forEach((key) => {
+          const idx = Number(key);
+          if (Number.isInteger(idx) && idx >= 0 && idx < NUM_SERVOS) {
+            offsets[idx] = clampCalibrationOffset(saved[key]);
+          }
+        });
+      } catch (e) {
+        // Ignore damaged local calibration data and keep defaults.
+      }
+
+      return offsets;
+    }
+
+    function saveServoCalibrationOffsets() {
+      try {
+        localStorage.setItem(CALIBRATION_STORAGE_KEY, JSON.stringify(servoCalibrationOffsets));
+        return true;
+      } catch (e) {
+        log('error', 'Calibration could not be saved in this browser');
+        return false;
+      }
+    }
+
+    function getServoCommandOffset(idx) {
+      return clampCalibrationOffset(servoCalibrationOffsets[idx] ?? 0);
+    }
+
+    function buildServoCommandAngle(idx, uiAngle, offset = getServoCommandOffset(idx)) {
+      const commandUiAngle = clampServoAngle(uiAngle + (SERVO_UI_COMMAND_OFFSETS[idx] || 0));
+      const adjustedAngle = clampServoAngle(commandUiAngle + offset);
+      return REVERSED_SERVOS.has(idx) ? 180 - adjustedAngle : adjustedAngle;
+    }
+
     function setServoUi(idx, angle, suffix = '') {
       const slider = document.getElementById('sl-' + idx);
       const angleSpan = document.getElementById('ang-' + idx);
@@ -1215,9 +1425,7 @@
     }
 
     function sendServoAngle(idx, angle) {
-      const commandUiAngle = Math.max(0, Math.min(180, angle + (SERVO_UI_COMMAND_OFFSETS[idx] || 0)));
-      const adjustedAngle = Math.max(0, Math.min(180, commandUiAngle + (SERVO_COMMAND_OFFSETS[idx] || 0)));
-      const commandAngle = REVERSED_SERVOS.has(idx) ? 180 - adjustedAngle : adjustedAngle;
+      const commandAngle = buildServoCommandAngle(idx, angle);
       const sent = wsSend({ command: 'set', idx: idx, servo_id: idx, angle: commandAngle, engage: true });
       if (sent) {
         lastCommandByServo[idx] = {
@@ -1275,7 +1483,7 @@
 
     function readServoSliderAngle(idx) {
       const slider = document.getElementById('sl-' + idx);
-      return slider ? parseInt(slider.value) : 90;
+      return slider ? parseInt(slider.value) : (idx % 3 === 2 ? LEG_UI_HOME_TIBIA_DEG : 90);
     }
 
     function syncLegMoverFromSliders() {
@@ -1507,6 +1715,137 @@
         legCard.appendChild(container);
         legsGrid.appendChild(legCard);
       }
+    }
+
+    function getServoLabel(idx) {
+      const leg = Math.floor(idx / 3) + 1;
+      const joint = JOINT_NAMES[idx % 3];
+      return `Servo ${idx} · Leg ${leg} ${joint}`;
+    }
+
+    function sendCalibrationServoCommand() {
+      const idx = calibrationState.selectedServo;
+      const referenceAngle = clampServoAngle(calibrationReferenceAngle?.value || readServoSliderAngle(idx));
+      const offset = clampCalibrationOffset(calibrationDraftOffsets[idx] || 0);
+      const commandAngle = buildServoCommandAngle(idx, referenceAngle, offset);
+      const sent = wsSend({ command: 'set', idx: idx, servo_id: idx, angle: commandAngle, engage: true });
+      if (sent) {
+        lastCommandByServo[idx] = {
+          commandAngle,
+          uiAngle: readServoSliderAngle(idx)
+        };
+        log('log', `Calibration servo ${idx}: model ${Math.round(referenceAngle)} deg, trim ${offset >= 0 ? '+' : ''}${offset} deg`);
+      }
+      return sent;
+    }
+
+    function setCalibrationDirty(dirty) {
+      calibrationState.dirty = dirty;
+      if (calibrationSaveState) {
+        calibrationSaveState.textContent = dirty ? 'Unsaved' : 'Saved';
+      }
+    }
+
+    function updateCalibrationServoGrid() {
+      if (!calibrationServoGrid) return;
+      calibrationServoGrid.querySelectorAll('button[data-servo-idx]').forEach((button) => {
+        const idx = Number(button.dataset.servoIdx);
+        const offset = clampCalibrationOffset(calibrationDraftOffsets[idx] || 0);
+        button.classList.toggle('active', idx === calibrationState.selectedServo);
+        button.innerHTML = `<span>S${idx}</span><span>${offset >= 0 ? '+' : ''}${offset} deg</span>`;
+      });
+    }
+
+    function syncCalibrationControls() {
+      const idx = calibrationState.selectedServo;
+      const offset = clampCalibrationOffset(calibrationDraftOffsets[idx] || 0);
+      if (calibrationSelectedLabel) calibrationSelectedLabel.textContent = getServoLabel(idx);
+      if (calibrationServoSelect) calibrationServoSelect.value = String(idx);
+      if (calibrationReferenceAngle) calibrationReferenceAngle.value = Math.round(readServoSliderAngle(idx));
+      if (calibrationOffset) calibrationOffset.value = offset;
+      if (calibrationOffsetNumber) calibrationOffsetNumber.value = offset;
+      updateCalibrationServoGrid();
+    }
+
+    function selectCalibrationServo(idx) {
+      calibrationState.selectedServo = Math.max(0, Math.min(NUM_SERVOS - 1, Number(idx) || 0));
+      syncCalibrationControls();
+    }
+
+    function setCalibrationDraftOffset(offset, send = true) {
+      const idx = calibrationState.selectedServo;
+      const nextOffset = clampCalibrationOffset(offset);
+      calibrationDraftOffsets[idx] = nextOffset;
+      if (calibrationOffset && calibrationOffset.value !== String(nextOffset)) calibrationOffset.value = nextOffset;
+      if (calibrationOffsetNumber && calibrationOffsetNumber.value !== String(nextOffset)) calibrationOffsetNumber.value = nextOffset;
+      updateCalibrationServoGrid();
+      setCalibrationDirty(true);
+      if (send) sendCalibrationServoCommand();
+    }
+
+    function openCalibrationWindow() {
+      calibrationDraftOffsets = { ...servoCalibrationOffsets };
+      setCalibrationDirty(false);
+      syncCalibrationControls();
+      calibrationModal?.classList.remove('hidden');
+    }
+
+    function closeCalibrationWindow() {
+      calibrationModal?.classList.add('hidden');
+    }
+
+    function buildCalibrationControls() {
+      if (calibrationServoSelect) {
+        calibrationServoSelect.innerHTML = '';
+        for (let idx = 0; idx < NUM_SERVOS; idx++) {
+          const option = document.createElement('option');
+          option.value = String(idx);
+          option.textContent = getServoLabel(idx);
+          calibrationServoSelect.appendChild(option);
+        }
+      }
+
+      if (calibrationServoGrid) {
+        calibrationServoGrid.innerHTML = '';
+        for (let idx = 0; idx < NUM_SERVOS; idx++) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'btn calibration-servo-btn';
+          button.dataset.servoIdx = String(idx);
+          button.addEventListener('click', () => selectCalibrationServo(idx));
+          calibrationServoGrid.appendChild(button);
+        }
+      }
+
+      openCalibrationBtn?.addEventListener('click', openCalibrationWindow);
+      calibrationClose?.addEventListener('click', closeCalibrationWindow);
+      calibrationModal?.addEventListener('click', (event) => {
+        if (event.target === calibrationModal) closeCalibrationWindow();
+      });
+      calibrationServoSelect?.addEventListener('change', () => selectCalibrationServo(calibrationServoSelect.value));
+      calibrationReferenceAngle?.addEventListener('change', () => {
+        calibrationReferenceAngle.value = Math.round(clampServoAngle(calibrationReferenceAngle.value));
+        sendCalibrationServoCommand();
+      });
+      calibrationOffset?.addEventListener('input', () => setCalibrationDraftOffset(calibrationOffset.value, true));
+      calibrationOffsetNumber?.addEventListener('change', () => setCalibrationDraftOffset(calibrationOffsetNumber.value, true));
+      calibrationSend?.addEventListener('click', sendCalibrationServoCommand);
+      calibrationUseSlider?.addEventListener('click', () => {
+        if (calibrationReferenceAngle) calibrationReferenceAngle.value = Math.round(readServoSliderAngle(calibrationState.selectedServo));
+        sendCalibrationServoCommand();
+      });
+      calibrationResetMotor?.addEventListener('click', () => {
+        setCalibrationDraftOffset(DEFAULT_SERVO_COMMAND_OFFSETS[calibrationState.selectedServo] || 0, true);
+      });
+      calibrationSave?.addEventListener('click', () => {
+        servoCalibrationOffsets = { ...calibrationDraftOffsets };
+        if (saveServoCalibrationOffsets()) {
+          setCalibrationDirty(false);
+          log('log', 'Motor calibration saved locally');
+        }
+      });
+
+      syncCalibrationControls();
     }
 
     // ---------- LEG MOVER UI MOCK ----------
@@ -2253,9 +2592,6 @@
     }
 
     function updateServoGaitButtons() {
-      if (gaitServoPlay) {
-        gaitServoPlay.disabled = fullModel.servoPlaying;
-      }
       if (gaitServoStop) {
         gaitServoStop.disabled = !fullModel.servoPlaying;
       }
@@ -2585,10 +2921,6 @@
 
       gaitSendPose?.addEventListener('click', () => {
         sendCurrentSliderPose();
-      });
-
-      gaitServoPlay?.addEventListener('click', () => {
-        playTripodServoGait();
       });
 
       gaitServoStop?.addEventListener('click', () => {
@@ -3613,6 +3945,7 @@
 
     // Initialize grid and UI
     buildLegGrid();
+    buildCalibrationControls();
     setupLegMover();
     setupFullKinematicModel();
     setupGaitPreviewControls();
