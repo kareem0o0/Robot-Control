@@ -253,6 +253,36 @@
       font-size: 2rem;
     }
 
+    .project-placeholder {
+      cursor: pointer;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 0.55rem;
+      margin-top: 1rem;
+    }
+
+    .mini-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      background: #1b2f3c;
+      border: 1px solid #2a4457;
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.42rem 0.65rem;
+      text-decoration: none;
+    }
+
+    .mini-btn:hover {
+      border-color: var(--accent);
+    }
+
     .card-header {
       display: flex;
       align-items: center;
@@ -453,6 +483,123 @@
       line-height: 1.4;
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(3, 8, 12, 0.72);
+      padding: 1.2rem;
+    }
+
+    .modal-backdrop.hidden {
+      display: none;
+    }
+
+    .project-modal {
+      width: min(920px, 100%);
+      max-height: min(88vh, 860px);
+      overflow: auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
+    }
+
+    .modal-header,
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-footer {
+      border-top: 1px solid var(--border);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .modal-header h2 {
+      font-size: 1.15rem;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #2a4457;
+      border-radius: 50%;
+      background: #1b2f3c;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .project-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.2rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+
+    .form-section {
+      background: var(--bg-panel);
+      border: 1px solid #1e3140;
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+    }
+
+    .form-section h3 {
+      color: #cbe5ff;
+      font-size: 0.95rem;
+      margin-bottom: 0.8rem;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      background: #15222e;
+      border: 1px solid #2a4457;
+      border-radius: 8px;
+      color: var(--text);
+      font: inherit;
+      min-height: 38px;
+      padding: 0.55rem 0.65rem;
+    }
+
+    textarea {
+      min-height: 142px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+
+    .form-note {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
     @media (max-width: 860px) {
       body {
         padding: 1rem;
@@ -480,7 +627,8 @@
       }
 
       .stats-grid,
-      .project-cards {
+      .project-cards,
+      .form-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -539,29 +687,13 @@
             <i class="fas fa-rocket"></i> Hexabot Fleet
           </div>
 
-          <div class="project-cards">
-            <a href="hexabot-modules.html" class="project-card">
-              <div class="card-header">
-                <div class="card-icon"><i class="fas fa-robot"></i></div>
-                <div>
-                  <div class="card-title">Hexabot V2</div>
-                  <div class="card-sub">6-leg hexapod robotics platform</div>
-                </div>
-              </div>
-              <div class="feature-list">
-                <div><i class="fas fa-check-circle"></i> Real-time servo control, 18 joints</div>
-                <div><i class="fas fa-check-circle"></i> Kinematic model and gait preview</div>
-                <div><i class="fas fa-check-circle"></i> Configurable robot geometry</div>
-              </div>
-              <span class="badge-active"><i class="fas fa-bolt"></i> ACTIVE</span>
-            </a>
-
-            <div class="project-placeholder">
+          <div class="project-cards" id="project-cards">
+            <button type="button" class="project-placeholder" id="add-project-slot">
               <i class="fas fa-plus"></i>
               <strong>Next Hexabot Slot</strong>
-              <span>Future robot variant or hardware revision</span>
+              <span>Add a robot variant or hardware revision</span>
               <span class="badge-coming"><i class="fas fa-clock"></i> READY</span>
-            </div>
+            </button>
           </div>
         </section>
       </main>
@@ -605,15 +737,21 @@
           <button class="btn" onclick="openModules()">
             <i class="fas fa-th-large"></i> Open Modules
           </button>
+          <button class="btn" onclick="openProjectModal()">
+            <i class="fas fa-plus"></i> Add Hexabot
+          </button>
+          <button class="btn" id="connect-registry-btn" onclick="connectRegistryFile()">
+            <i class="fas fa-database"></i> Connect Registry File
+          </button>
         </section>
 
         <section class="side-panel">
           <h3><i class="fas fa-lightbulb"></i> Tips</h3>
           <ul class="tips-list">
-            <li>Use this page for multiple Hexabot variants.</li>
+            <li>Projects live in project/hexapods.json.</li>
+            <li>Connect the registry file to write directly from the browser.</li>
             <li>Each card can point to its own module launcher.</li>
-            <li>Edit geometry in hexabot-config.json.</li>
-            <li>Run node sync-config.js after config edits.</li>
+            <li>Use a local server for automatic registry loading.</li>
           </ul>
         </section>
       </aside>
@@ -632,8 +770,159 @@
     </div>
   </div>
 
+  <div class="modal-backdrop hidden" id="project-modal" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+    <div class="project-modal">
+      <div class="modal-header">
+        <h2 id="project-modal-title"><i class="fas fa-plus"></i> Add Hexabot Project</h2>
+        <button type="button" class="icon-btn" onclick="closeProjectModal()" aria-label="Close"><i class="fas fa-times"></i></button>
+      </div>
+      <form class="project-form" id="project-form">
+        <section class="form-section">
+          <h3>Identity</h3>
+          <div class="form-grid">
+            <label>Project Name
+              <input name="name" required placeholder="Hexabot V3">
+            </label>
+            <label>Project ID / Folder Slug
+              <input name="id" required pattern="[a-z0-9-]+" placeholder="hexabot-v3">
+            </label>
+            <label>Family
+              <select name="family">
+                <option value="hexapod">Hexapod</option>
+                <option value="quadruped">Quadruped</option>
+                <option value="rover">Rover</option>
+                <option value="arm">Arm</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>Revision
+              <input name="revision" placeholder="v1">
+            </label>
+            <label>Module Launcher
+              <input name="moduleUrl" placeholder="hexabot-modules.html">
+            </label>
+            <label>WebSocket Endpoint
+              <input name="endpoint" placeholder="ws://192.168.1.42/ws">
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h3>Body Geometry</h3>
+          <div class="form-grid">
+            <label>Shape Mode
+              <select name="shapeMode">
+                <option value="dimensions">Dimensions</option>
+                <option value="points">Points</option>
+              </select>
+            </label>
+            <label>Width mm
+              <input name="widthMm" type="number" step="0.001">
+            </label>
+            <label>Height mm
+              <input name="heightMm" type="number" step="0.001">
+            </label>
+            <label>Top Joint Span mm
+              <input name="topJointSpanMm" type="number" step="0.001">
+            </label>
+          </div>
+          <label style="margin-top: 0.85rem;">Body Points JSON
+            <textarea name="points"></textarea>
+          </label>
+          <p class="form-note">Points are centered coxa mount coordinates using x side-to-side and z front-to-back. Use them when your hexapod body is not symmetric enough for width/height/span.</p>
+        </section>
+
+        <section class="form-section">
+          <h3>Leg Links</h3>
+          <div class="form-grid">
+            <label>Coxa mm
+              <input name="coxaLengthMm" type="number" step="0.001">
+            </label>
+            <label>Femur Primary mm
+              <input name="femurPrimaryLengthMm" type="number" step="0.001">
+            </label>
+            <label>Femur Secondary mm
+              <input name="femurSecondaryLengthMm" type="number" step="0.001">
+            </label>
+            <label>Femur Bend deg
+              <input name="femurSecondaryAngleDeg" type="number" step="0.001">
+            </label>
+            <label>Tibia mm
+              <input name="tibiaLengthMm" type="number" step="0.001">
+            </label>
+            <label>Foot mm
+              <input name="footLengthMm" type="number" step="0.001">
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h3>Home Angles and Hardware</h3>
+          <div class="form-grid">
+            <label>Coxa Home deg
+              <input name="coxaHomeDeg" type="number" step="0.001">
+            </label>
+            <label>Femur Home deg
+              <input name="femurHomeDeg" type="number" step="0.001">
+            </label>
+            <label>Tibia Home deg
+              <input name="tibiaHomeDeg" type="number" step="0.001">
+            </label>
+            <label>UI Tibia Home deg
+              <input name="uiTibiaHomeDeg" type="number" step="0.001">
+            </label>
+            <label>Servo Count
+              <input name="servoCount" type="number" min="0" step="1">
+            </label>
+            <label>Controller
+              <select name="controller">
+                <option value="ESP32">ESP32</option>
+                <option value="Arduino">Arduino</option>
+                <option value="Raspberry Pi">Raspberry Pi</option>
+                <option value="Custom">Custom</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <div class="modal-footer">
+          <button type="button" class="btn" style="width:auto; margin:0;" onclick="closeProjectModal()">Cancel</button>
+          <button type="submit" class="btn" style="width:auto; margin:0;"><i class="fas fa-save"></i> Save Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="hexabot-config.js"></script>
   <script>
+    const REGISTRY_PATH = 'project/hexapods.json';
+    const REGISTRY_API = '/api/hexapods';
+    const REGISTRY_MIRROR_KEY = 'hexapod-project-registry-mirror';
+    const defaultConfig = window.HexabotRobotConfig || {};
+    const defaultBody = defaultConfig.kinematics?.body || {};
+    const defaultLinks = defaultConfig.kinematics?.links || {};
+    const defaultHome = defaultConfig.kinematics?.homeAngles || {};
+    const defaultServos = defaultConfig.servoHardware?.servos || [];
+    let registryFileHandle = null;
+    let registryProjects = [];
+
+    const seedProject = {
+      id: 'hexabot-v2',
+      name: 'Hexabot V2',
+      family: 'hexapod',
+      revision: defaultConfig.metadata?.revision || 'v2',
+      moduleUrl: 'hexabot-modules.html',
+      endpoint: 'ws://192.168.1.42/ws',
+      controller: 'ESP32',
+      status: 'active',
+      configFile: 'hexabot-config.json',
+      kinematics: defaultConfig.kinematics,
+      servoHardware: defaultConfig.servoHardware,
+      createdAt: 'builtin',
+      updatedAt: 'builtin'
+    };
     let toastTimer = null;
+    let editingProjectId = null;
 
     function showMessage(title, message) {
       const toast = document.getElementById('toast');
@@ -642,6 +931,348 @@
       toast.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toast.classList.remove('show'), 4200);
+    }
+
+    function slugify(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'hexabot-project';
+    }
+
+    function numberValue(formData, key, fallback = 0) {
+      const value = Number(formData.get(key));
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function getMirrorProjects() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(REGISTRY_MIRROR_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveMirrorProjects(projects) {
+      localStorage.setItem(REGISTRY_MIRROR_KEY, JSON.stringify(projects, null, 2));
+    }
+
+    function registryDocument(projects = registryProjects) {
+      return {
+        _comment: 'Hexapod project registry. Managed by hexapod-projects.html.',
+        projects
+      };
+    }
+
+    function normalizeRegistryDocument(data) {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.projects)) return data.projects;
+      return [];
+    }
+
+    async function loadRegistry() {
+      if (location.protocol !== 'file:') {
+        try {
+          const response = await fetch(REGISTRY_API, { cache: 'no-store' });
+          if (response.ok) {
+            registryProjects = normalizeRegistryDocument(await response.json());
+          }
+        } catch (error) {
+          try {
+            const response = await fetch(REGISTRY_PATH, { cache: 'no-store' });
+            if (response.ok) {
+              registryProjects = normalizeRegistryDocument(await response.json());
+            }
+          } catch (fallbackError) {
+            console.warn('Registry fetch failed; using browser mirror.', fallbackError);
+          }
+        }
+      }
+
+      if (!registryProjects.length) {
+        registryProjects = getMirrorProjects();
+      }
+
+      if (!registryProjects.length) {
+        registryProjects = [seedProject];
+      }
+    }
+
+    function getAllProjects() {
+      const hasSeed = registryProjects.some((project) => project.id === seedProject.id);
+      return hasSeed ? registryProjects : [seedProject, ...registryProjects];
+    }
+
+    function buildProjectCard(project) {
+      const card = document.createElement(project.moduleUrl ? 'a' : 'article');
+      card.className = 'project-card';
+      if (project.moduleUrl) card.href = project.moduleUrl;
+
+      const body = project.kinematics?.body || {};
+      const links = project.kinematics?.links || {};
+      const servoCount = project.servoHardware?.servos?.length || project.servoCount || 0;
+      const shapeLabel = body.shapeMode === 'points' ? 'Point-defined body' : 'Dimension-defined body';
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-icon"><i class="fas fa-robot"></i></div>
+          <div>
+            <div class="card-title">${escapeHtml(project.name || project.id)}</div>
+            <div class="card-sub">${escapeHtml(project.family || 'hexapod')} · ${escapeHtml(project.revision || 'unversioned')}</div>
+          </div>
+        </div>
+        <div class="feature-list">
+          <div><i class="fas fa-check-circle"></i> ${servoCount || 18} servos · ${escapeHtml(project.controller || 'Controller TBD')}</div>
+          <div><i class="fas fa-check-circle"></i> ${shapeLabel}</div>
+          <div><i class="fas fa-check-circle"></i> Coxa ${links.coxaLengthMm ?? '-'} mm · Tibia ${links.tibiaLengthMm ?? '-'} mm</div>
+        </div>
+        <span class="${project.status === 'active' ? 'badge-active' : 'badge-coming'}"><i class="fas fa-${project.status === 'active' ? 'bolt' : 'clock'}"></i> ${project.status === 'active' ? 'ACTIVE' : 'SAVED'}</span>
+        <div class="card-actions">
+          <button class="mini-btn" type="button" data-edit="${escapeHtml(project.id)}"><i class="fas fa-pen"></i> Edit</button>
+          ${project.id === seedProject.id ? '' : `<button class="mini-btn" type="button" data-delete="${escapeHtml(project.id)}"><i class="fas fa-trash"></i> Delete</button>`}
+        </div>
+      `;
+      card.querySelectorAll('button').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      });
+      card.querySelector('[data-edit]')?.addEventListener('click', () => openProjectModal(project.id));
+      card.querySelector('[data-delete]')?.addEventListener('click', () => deleteProject(project.id));
+      return card;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function renderProjects() {
+      const container = document.getElementById('project-cards');
+      const addSlot = document.getElementById('add-project-slot');
+      container.querySelectorAll('.project-card').forEach((card) => card.remove());
+      getAllProjects().forEach((project) => container.insertBefore(buildProjectCard(project), addSlot));
+      const activeCount = getAllProjects().length;
+      document.querySelectorAll('.stat-value')[0].textContent = String(activeCount);
+    }
+
+    function openProjectModal(projectId = null) {
+      editingProjectId = projectId;
+      const project = projectId ? getAllProjects().find((item) => item.id === projectId) : null;
+      if (projectId && !project) {
+        showMessage('Project not found', 'That slot could not be found in the registry.');
+        return;
+      }
+      document.getElementById('project-modal-title').innerHTML = project
+        ? '<i class="fas fa-pen"></i> Edit Hexabot Project'
+        : '<i class="fas fa-plus"></i> Add Hexabot Project';
+      fillProjectForm(project);
+      document.getElementById('project-modal').classList.remove('hidden');
+      document.querySelector('[name="name"]').focus();
+    }
+
+    function closeProjectModal() {
+      editingProjectId = null;
+      document.getElementById('project-modal').classList.add('hidden');
+    }
+
+    function fillProjectForm(project = null) {
+      const form = document.getElementById('project-form');
+      const body = project?.kinematics?.body || defaultBody;
+      const links = project?.kinematics?.links || defaultLinks;
+      const home = project?.kinematics?.homeAngles || defaultHome;
+      form.reset();
+      form.elements.name.value = project?.name || 'Hexabot V3';
+      form.elements.id.value = project?.id || 'hexabot-v3';
+      form.elements.revision.value = project?.revision || 'v1';
+      form.elements.family.value = project?.family || 'hexapod';
+      form.elements.moduleUrl.value = project?.moduleUrl || 'hexabot-modules.html';
+      form.elements.endpoint.value = project?.endpoint || seedProject.endpoint;
+      form.elements.shapeMode.value = body.shapeMode || 'dimensions';
+      form.elements.widthMm.value = body.widthMm ?? 169.45;
+      form.elements.heightMm.value = body.heightMm ?? 164.2;
+      form.elements.topJointSpanMm.value = body.topJointSpanMm ?? 121.5;
+      form.elements.points.value = JSON.stringify(body.points || [], null, 2);
+      form.elements.coxaLengthMm.value = links.coxaLengthMm ?? 75;
+      form.elements.femurPrimaryLengthMm.value = links.femurPrimaryLengthMm ?? 51;
+      form.elements.femurSecondaryLengthMm.value = links.femurSecondaryLengthMm ?? 51;
+      form.elements.femurSecondaryAngleDeg.value = links.femurSecondaryAngleDeg ?? 45;
+      form.elements.tibiaLengthMm.value = links.tibiaLengthMm ?? 74.5;
+      form.elements.footLengthMm.value = links.footLengthMm ?? 95;
+      form.elements.coxaHomeDeg.value = home.coxaHomeDeg ?? 90;
+      form.elements.femurHomeDeg.value = home.femurHomeDeg ?? 90;
+      form.elements.tibiaHomeDeg.value = home.tibiaHomeDeg ?? 90;
+      form.elements.uiTibiaHomeDeg.value = home.uiTibiaHomeDeg ?? 135;
+      form.elements.servoCount.value = project?.servoHardware?.servos?.length || project?.servoCount || defaultServos.length || 18;
+      form.elements.controller.value = project?.controller || 'ESP32';
+    }
+
+    function projectFromForm(form, previousProject = null) {
+      const data = new FormData(form);
+      let points = [];
+      try {
+        points = JSON.parse(data.get('points') || '[]');
+      } catch (error) {
+        throw new Error('Body points must be valid JSON.');
+      }
+      if (!Array.isArray(points)) throw new Error('Body points must be a JSON array.');
+      const servoCount = Math.max(0, Math.round(numberValue(data, 'servoCount', 18)));
+      const now = new Date().toISOString();
+      return {
+        id: slugify(data.get('id') || data.get('name')),
+        name: String(data.get('name') || 'Hexabot Project').trim(),
+        family: String(data.get('family') || 'hexapod'),
+        revision: String(data.get('revision') || 'v1').trim(),
+        moduleUrl: String(data.get('moduleUrl') || '').trim(),
+        endpoint: String(data.get('endpoint') || '').trim(),
+        controller: String(data.get('controller') || 'ESP32'),
+        status: previousProject?.status || 'saved',
+        kinematics: {
+          body: {
+            _comment: 'Body mount geometry for this project.',
+            shapeMode: String(data.get('shapeMode') || 'dimensions'),
+            widthMm: numberValue(data, 'widthMm', 169.45),
+            heightMm: numberValue(data, 'heightMm', 164.2),
+            topJointSpanMm: numberValue(data, 'topJointSpanMm', 121.5),
+            points
+          },
+          links: {
+            _comment: 'Leg link lengths for this project.',
+            coxaLengthMm: numberValue(data, 'coxaLengthMm', 75),
+            femurPrimaryLengthMm: numberValue(data, 'femurPrimaryLengthMm', 51),
+            femurSecondaryLengthMm: numberValue(data, 'femurSecondaryLengthMm', 51),
+            femurSecondaryAngleDeg: numberValue(data, 'femurSecondaryAngleDeg', 45),
+            tibiaLengthMm: numberValue(data, 'tibiaLengthMm', 74.5),
+            footLengthMm: numberValue(data, 'footLengthMm', 95)
+          },
+          homeAngles: {
+            _comment: 'Logical neutral angles for this project.',
+            coxaHomeDeg: numberValue(data, 'coxaHomeDeg', 90),
+            femurHomeDeg: numberValue(data, 'femurHomeDeg', 90),
+            tibiaHomeDeg: numberValue(data, 'tibiaHomeDeg', 90),
+            uiTibiaHomeDeg: numberValue(data, 'uiTibiaHomeDeg', 135)
+          }
+        },
+        servoCount,
+        servoHardware: {
+          _comment: 'Expand this with per-servo calibration when hardware mapping is final.',
+          servos: Array.from({ length: servoCount }, (_, id) => ({
+            id,
+            leg: Math.floor(id / 3) + 1,
+            joint: ['coxa', 'femur', 'tibia'][id % 3] || 'joint',
+            centerAngleDeg: 90,
+            minAngleDeg: 0,
+            maxAngleDeg: 180,
+            minPulseUs: 500,
+            maxPulseUs: 2400,
+            inverted: false
+          }))
+        },
+        configFile: previousProject?.configFile,
+        createdAt: previousProject?.createdAt || now,
+        updatedAt: now,
+        registryPath: REGISTRY_PATH
+      };
+    }
+
+    async function connectRegistryFile() {
+      if (!window.showOpenFilePicker) {
+        showMessage('Registry file access unavailable', 'Use Chrome or Edge, or run a small backend, to let the browser write project/hexapods.json directly.');
+        return;
+      }
+
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{
+            description: 'Hexapod registry JSON',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+        registryFileHandle = handle;
+        const text = await (await handle.getFile()).text();
+        registryProjects = normalizeRegistryDocument(JSON.parse(text));
+        if (!registryProjects.length) registryProjects = [seedProject];
+        saveMirrorProjects(registryProjects);
+        renderProjects();
+        showMessage('Registry connected', `${handle.name} is connected for direct project saves.`);
+      } catch (error) {
+        showMessage('Registry not connected', error.message || 'File selection was cancelled.');
+      }
+    }
+
+    async function ensureRegistryFileForWrite() {
+      if (registryFileHandle) return true;
+      if (!window.showOpenFilePicker) return false;
+      try {
+        await connectRegistryFile();
+        return Boolean(registryFileHandle);
+      } catch (error) {
+        return false;
+      }
+    }
+
+    async function writeRegistry() {
+      saveMirrorProjects(registryProjects);
+      if (location.protocol !== 'file:') {
+        try {
+          const response = await fetch(REGISTRY_API, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(registryDocument())
+          });
+          if (response.ok) return true;
+        } catch (error) {
+          console.warn('Registry API write failed; falling back to browser file access.', error);
+        }
+      }
+
+      if (!registryFileHandle) {
+        return false;
+      }
+      const writable = await registryFileHandle.createWritable();
+      await writable.write(JSON.stringify(registryDocument(), null, 2) + '\n');
+      await writable.close();
+      return true;
+    }
+
+    async function saveProject(project) {
+      if (location.protocol === 'file:') {
+        await ensureRegistryFileForWrite();
+      }
+      const conflictingProject = getAllProjects().find((item) => item.id === project.id && item.id !== editingProjectId);
+      if (conflictingProject) {
+        showMessage('Project ID already exists', `Choose a different ID than ${project.id}.`);
+        return;
+      }
+      registryProjects = getAllProjects().filter((item) => item.id !== project.id);
+      if (editingProjectId && editingProjectId !== project.id) {
+        registryProjects = registryProjects.filter((item) => item.id !== editingProjectId);
+      }
+      registryProjects.push(project);
+      const wroteFile = await writeRegistry();
+      renderProjects();
+      closeProjectModal();
+      showMessage(
+        editingProjectId ? 'Project updated' : 'Project saved',
+        wroteFile
+          ? `${project.name} was written to project/hexapods.json.`
+          : `${project.name} is saved in the browser mirror. Run node server.js for automatic registry writes.`
+      );
+    }
+
+    async function deleteProject(projectId) {
+      registryProjects = getAllProjects().filter((project) => project.id !== projectId);
+      await writeRegistry();
+      renderProjects();
+      showMessage('Project removed', registryFileHandle ? 'Registry file was updated.' : 'Browser mirror was updated.');
     }
 
     function copyEndpoint() {
@@ -661,7 +1292,25 @@
       window.location.href = 'hexabot-modules.html';
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      const connectRegistryBtn = document.getElementById('connect-registry-btn');
+      if (connectRegistryBtn && location.protocol !== 'file:') {
+        connectRegistryBtn.hidden = true;
+      }
+      await loadRegistry();
+      renderProjects();
+      document.getElementById('add-project-slot').addEventListener('click', () => openProjectModal());
+      document.getElementById('project-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+          const previousProject = editingProjectId
+            ? getAllProjects().find((project) => project.id === editingProjectId)
+            : null;
+          await saveProject(projectFromForm(event.currentTarget, previousProject));
+        } catch (error) {
+          showMessage('Project form error', error.message);
+        }
+      });
       console.log('Hexabot Projects Hub initialized.');
     });
   </script>

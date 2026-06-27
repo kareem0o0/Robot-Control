@@ -8,9 +8,9 @@
 # Option A: Direct file access
 open /path/to/main-dashboard.html
 
-# Option B: Serve locally (recommended)
+# Option B: Serve locally with automatic project saves (recommended)
 cd /path/to/hexabot
-python3 -m http.server 8000
+node server.js
 
 # Then visit: http://localhost:8000
 ```
@@ -181,6 +181,24 @@ For the hexagonal body, use `kinematics.body.shapeMode`:
 
 - `"dimensions"` uses `widthMm`, `heightMm`, and `topJointSpanMm`.
 - `"points"` uses the six centered `{ xMm, zMm }` coxa mount coordinates in `kinematics.body.points`.
+
+### Add a Hexapod Project
+
+Run the local server first:
+
+```bash
+node server.js
+```
+
+Then open `http://localhost:8000/hexapod-projects.html` and click the add slot. Projects are saved directly into:
+
+```text
+project/hexapods.json
+```
+
+If you open the page with `file://`, the browser cannot silently write the JSON file. In that mode, use **Connect Registry File** or run `node server.js`.
+
+Use the **Edit** button on a project card to update its geometry, link lengths, home angles, controller data, and registry entry.
 
 ### Change ESP32 IP Address
 
