@@ -5,21 +5,114 @@
   const RAD_TO_DEG = 180 / Math.PI;
   const PHASE_EPSILON = 1e-6;
 
-  const DEFAULT_CONFIG = {
-    bodyWidth: 169.45,
-    bodyHeight: 164.2,
-    topJointSpan: 121.5,
-    coxaLength: 75,
-    femurPrimaryLength: 51,
-    femurSecondaryLength: 51,
-    femurSecondaryAngleDeg: 45,
-    tibiaLength: 74.5,
-    footLength: 95,
-    coxaHomeDeg: 90,
-    femurHomeDeg: 90,
-    tibiaHomeDeg: 90,
-    uiTibiaHomeDeg: 135
+  const FALLBACK_ROBOT_CONFIG = {
+    kinematics: {
+      body: {
+        shapeMode: 'dimensions',
+        widthMm: 169.45,
+        heightMm: 164.2,
+        topJointSpanMm: 121.5,
+        points: [
+          { leg: 1, label: 'front-left', xMm: -60.75, zMm: -82.1 },
+          { leg: 2, label: 'middle-left', xMm: -84.725, zMm: 0 },
+          { leg: 3, label: 'rear-left', xMm: -60.75, zMm: 82.1 },
+          { leg: 4, label: 'rear-right', xMm: 60.75, zMm: 82.1 },
+          { leg: 5, label: 'middle-right', xMm: 84.725, zMm: 0 },
+          { leg: 6, label: 'front-right', xMm: 60.75, zMm: -82.1 }
+        ]
+      },
+      links: {
+        coxaLengthMm: 75,
+        femurPrimaryLengthMm: 51,
+        femurSecondaryLengthMm: 51,
+        femurSecondaryAngleDeg: 45,
+        tibiaLengthMm: 74.5,
+        footLengthMm: 95
+      },
+      homeAngles: {
+        coxaHomeDeg: 90,
+        femurHomeDeg: 90,
+        tibiaHomeDeg: 90,
+        uiTibiaHomeDeg: 135
+      }
+    },
+    gaitDefaults: {
+      type: 'tripod',
+      strideLengthMm: 210,
+      liftHeightMm: 130,
+      walkHeightMm: 0,
+      durationMs: 2000,
+      directionDeg: 0
+    },
+    ui: {
+      legMover: {
+        baseX: 180,
+        baseY: 220,
+        viewYawDeg: -35,
+        viewPitchDeg: 24,
+        viewScale: 1
+      }
+    }
   };
+
+  function numberOr(value, fallback) {
+    return Number.isFinite(Number(value)) ? Number(value) : fallback;
+  }
+
+  function loadRobotConfig() {
+    if (global.HexabotRobotConfig) return global.HexabotRobotConfig;
+    try {
+      const request = new XMLHttpRequest();
+      request.open('GET', 'hexabot-config.json', false);
+      request.send(null);
+      if ((request.status >= 200 && request.status < 300) || request.status === 0) {
+        return JSON.parse(request.responseText);
+      }
+    } catch (error) {
+      console.warn('Using built-in Hexabot config fallback:', error);
+    }
+    return FALLBACK_ROBOT_CONFIG;
+  }
+
+  function kinematicsFromRobotConfig(robotConfig) {
+    const fallback = FALLBACK_ROBOT_CONFIG.kinematics;
+    const body = robotConfig?.kinematics?.body || {};
+    const links = robotConfig?.kinematics?.links || {};
+    const home = robotConfig?.kinematics?.homeAngles || {};
+    return {
+      bodyShapeMode: body.shapeMode === 'points' ? 'points' : 'dimensions',
+      bodyWidth: numberOr(body.widthMm, fallback.body.widthMm),
+      bodyHeight: numberOr(body.heightMm, fallback.body.heightMm),
+      topJointSpan: numberOr(body.topJointSpanMm, fallback.body.topJointSpanMm),
+      bodyPoints: normalizeBodyPoints(body.points, fallback.body.points),
+      coxaLength: numberOr(links.coxaLengthMm, fallback.links.coxaLengthMm),
+      femurPrimaryLength: numberOr(links.femurPrimaryLengthMm, fallback.links.femurPrimaryLengthMm),
+      femurSecondaryLength: numberOr(links.femurSecondaryLengthMm, fallback.links.femurSecondaryLengthMm),
+      femurSecondaryAngleDeg: numberOr(links.femurSecondaryAngleDeg, fallback.links.femurSecondaryAngleDeg),
+      tibiaLength: numberOr(links.tibiaLengthMm, fallback.links.tibiaLengthMm),
+      footLength: numberOr(links.footLengthMm, fallback.links.footLengthMm),
+      coxaHomeDeg: numberOr(home.coxaHomeDeg, fallback.homeAngles.coxaHomeDeg),
+      femurHomeDeg: numberOr(home.femurHomeDeg, fallback.homeAngles.femurHomeDeg),
+      tibiaHomeDeg: numberOr(home.tibiaHomeDeg, fallback.homeAngles.tibiaHomeDeg),
+      uiTibiaHomeDeg: numberOr(home.uiTibiaHomeDeg, fallback.homeAngles.uiTibiaHomeDeg)
+    };
+  }
+
+  function normalizeBodyPoints(points, fallbackPoints) {
+    const source = Array.isArray(points) && points.length >= 6 ? points : fallbackPoints;
+    return source
+      .slice(0, 6)
+      .map((point, index) => ({
+        leg: Number.isInteger(Number(point.leg)) ? Number(point.leg) : index + 1,
+        label: point.label || `leg-${index + 1}`,
+        x: numberOr(point.xMm, 0),
+        z: numberOr(point.zMm, 0)
+      }))
+      .sort((a, b) => a.leg - b.leg);
+  }
+
+  const ROBOT_CONFIG = loadRobotConfig();
+  const DEFAULT_CONFIG = kinematicsFromRobotConfig(ROBOT_CONFIG);
 
   const TRIPOD_GROUPS = [
     [1, 3, 5],
@@ -102,6 +195,10 @@
   }
 
   function basePoints(config = DEFAULT_CONFIG) {
+    if (config.bodyShapeMode === 'points' && Array.isArray(config.bodyPoints) && config.bodyPoints.length >= 6) {
+      return config.bodyPoints.slice(0, 6).map((point) => vec(point.x, 0, point.z));
+    }
+
     const halfW = config.bodyWidth / 2;
     const halfH = config.bodyHeight / 2;
     const halfTop = config.topJointSpan / 2;
@@ -371,12 +468,13 @@
     }
     return {
       type: gaitType,
-      durationMs: options.durationMs ?? 1200,
+      durationMs: options.durationMs ?? numberOr(ROBOT_CONFIG?.gaitDefaults?.durationMs, FALLBACK_ROBOT_CONFIG.gaitDefaults.durationMs),
       frames
     };
   }
 
   global.HexabotGaits = {
+    robotConfig: ROBOT_CONFIG,
     config: DEFAULT_CONFIG,
     gaitTypes: GAIT_TYPES,
     tripodGroups: TRIPOD_GROUPS,

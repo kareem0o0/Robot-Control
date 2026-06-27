@@ -153,6 +153,9 @@ If you see this, everything is working! ðŸŽ‰
 | `main-dashboard.html` | Top-level project dashboard |
 | `hexabot-modules.html` | Hexabot module launcher |
 | `hexabot-servo-controller.html` | Real-time servo controller |
+| `hexabot-config.json` | Source-of-truth robot parameters for geometry, gait defaults, and servo mapping |
+| `hexabot-config.js` | Generated file-mode config bootstrap used when opening pages with `file://` |
+| `sync-config.js` | Regenerates `hexabot-config.js` from `hexabot-config.json` |
 | `websocket-integration.js` | Optional WebSocket module (for advanced setups) |
 | `DASHBOARD_README.md` | Full technical documentation |
 | `QUICKSTART.md` | This file |
@@ -162,6 +165,21 @@ If you see this, everything is working! ðŸŽ‰
 ---
 
 ## Configuration
+
+### Change Robot Parameters
+
+Edit `hexabot-config.json`, then regenerate the file-mode bootstrap:
+
+```bash
+node sync-config.js
+```
+
+Open with `file://` or serve locally. The browser loads `hexabot-config.js`, which is generated from the JSON.
+
+For the hexagonal body, use `kinematics.body.shapeMode`:
+
+- `"dimensions"` uses `widthMm`, `heightMm`, and `topJointSpanMm`.
+- `"points"` uses the six centered `{ xMm, zMm }` coxa mount coordinates in `kinematics.body.points`.
 
 ### Change ESP32 IP Address
 

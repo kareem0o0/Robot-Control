@@ -1096,20 +1096,62 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="hexabot-config.js"></script>
 <script src="hexabot-gaits.js"></script>
 <script>
   (function() {
     // ---------- CONSTANTS & STATE ----------
-    const NUM_SERVOS = 18;
+    const ROBOT_CONFIG = window.HexabotGaits?.robotConfig || {};
+    const SERVO_HARDWARE_CONFIG = ROBOT_CONFIG.servoHardware || {};
+    const SERVO_CONFIGS = Array.isArray(SERVO_HARDWARE_CONFIG.servos) ? SERVO_HARDWARE_CONFIG.servos : [];
+    const KINEMATIC_CONFIG = window.HexabotGaits?.config || {};
+    const GAIT_DEFAULTS = ROBOT_CONFIG.gaitDefaults || {};
+    const LEG_MOVER_UI_CONFIG = ROBOT_CONFIG.ui?.legMover || {};
+    const NUM_SERVOS = SERVO_CONFIGS.length || 18;
+    const LEG_COUNT = SERVO_CONFIGS.length
+      ? Math.max(...SERVO_CONFIGS.map((servo) => Number(servo.leg) || 0))
+      : 6;
+    const JOINT_KEYS = ['coxa', 'femur', 'tibia'];
     const JOINT_NAMES = ['Coxa', 'Femur', 'Tibia'];
-    const JOINT_SERVO_GROUPS = [
-      [0, 3, 6, 9, 12, 15],
-      [1, 4, 7, 10, 13, 16],
-      [2, 5, 8, 11, 14, 17]
-    ];
-    const LEG_MOVER_FEMUR_HOME_DEG = 90;
-    const LEG_MOVER_TIBIA_HOME_DEG = 90;
-    const LEG_UI_HOME_TIBIA_DEG = 135;
+    const JOINT_SERVO_GROUPS = JOINT_KEYS.map((joint, jointIdx) => {
+      const ids = SERVO_CONFIGS
+        .filter((servo) => servo.joint === joint)
+        .map((servo) => Number(servo.id))
+        .filter((id) => Number.isInteger(id));
+      return ids.length ? ids : Array.from({ length: Math.ceil(NUM_SERVOS / 3) }, (_, legIdx) => legIdx * 3 + jointIdx)
+        .filter((id) => id < NUM_SERVOS);
+    });
+
+    function configNumber(value, fallback) {
+      return Number.isFinite(Number(value)) ? Number(value) : fallback;
+    }
+
+    const LEG_MOVER_FEMUR_HOME_DEG = configNumber(KINEMATIC_CONFIG.femurHomeDeg, 90);
+    const LEG_MOVER_TIBIA_HOME_DEG = configNumber(KINEMATIC_CONFIG.tibiaHomeDeg, 90);
+    const LEG_UI_HOME_TIBIA_DEG = configNumber(KINEMATIC_CONFIG.uiTibiaHomeDeg, 135);
+    const DEFAULT_GAIT_TYPE = GAIT_DEFAULTS.type || 'tripod';
+    const DEFAULT_GAIT_STRIDE_MM = configNumber(GAIT_DEFAULTS.strideLengthMm, 210);
+    const DEFAULT_GAIT_LIFT_MM = configNumber(GAIT_DEFAULTS.liftHeightMm, 130);
+    const DEFAULT_GAIT_WALK_HEIGHT_MM = configNumber(GAIT_DEFAULTS.walkHeightMm, 0);
+    const DEFAULT_GAIT_DURATION_MS = configNumber(GAIT_DEFAULTS.durationMs, 2000);
+    const DEFAULT_GAIT_DIRECTION_DEG = configNumber(GAIT_DEFAULTS.directionDeg, 0);
+    const LEG_MOVER_BASE = {
+      x: configNumber(LEG_MOVER_UI_CONFIG.baseX, 180),
+      y: configNumber(LEG_MOVER_UI_CONFIG.baseY, 220)
+    };
+    const LEG_MOVER_FEMUR_SECONDARY_RAD = configNumber(KINEMATIC_CONFIG.femurSecondaryAngleDeg, 45) * Math.PI / 180;
+    const LEG_MOVER_LINK_A = Math.hypot(
+      configNumber(KINEMATIC_CONFIG.femurPrimaryLength, 51) + Math.cos(LEG_MOVER_FEMUR_SECONDARY_RAD) * configNumber(KINEMATIC_CONFIG.femurSecondaryLength, 51),
+      Math.sin(LEG_MOVER_FEMUR_SECONDARY_RAD) * configNumber(KINEMATIC_CONFIG.femurSecondaryLength, 51)
+    );
+    const LEG_MOVER_HOME_KNEE = {
+      x: LEG_MOVER_BASE.x + configNumber(KINEMATIC_CONFIG.femurPrimaryLength, 51) + Math.cos(LEG_MOVER_FEMUR_SECONDARY_RAD) * configNumber(KINEMATIC_CONFIG.femurSecondaryLength, 51),
+      y: LEG_MOVER_BASE.y + Math.sin(LEG_MOVER_FEMUR_SECONDARY_RAD) * configNumber(KINEMATIC_CONFIG.femurSecondaryLength, 51)
+    };
+    const LEG_MOVER_HOME_TARGET = {
+      x: LEG_MOVER_HOME_KNEE.x + configNumber(KINEMATIC_CONFIG.tibiaLength, 74.5),
+      y: LEG_MOVER_HOME_KNEE.y + configNumber(KINEMATIC_CONFIG.footLength, 95)
+    };
     const REVERSED_SERVOS = new Set([0, 2, 3, 4, 6, 8, 9, 11, 12, 13, 15, 17]);
     // UI/model offsets applied before backend tuning. Tibia is displayed/modelled
     // around 135 deg while preserving the old 90 deg backend/home command.
@@ -1229,28 +1271,28 @@
     const gaitSpeedValue = document.getElementById('gait-speed-value');
 
     const legMover = {
-      base: { x: 180, y: 220 },
-      originBase: { x: 180, y: 220 },
-      coxaLength: 75,
+      base: { ...LEG_MOVER_BASE },
+      originBase: { ...LEG_MOVER_BASE },
+      coxaLength: configNumber(KINEMATIC_CONFIG.coxaLength, 75),
       is3d: false,
-      femurPrimaryLength: 51,
-      femurSecondaryLength: 51,
-      femurSecondaryAngleDeg: 45,
-      linkA: Math.hypot(51 + 51 * Math.cos(Math.PI / 4), 51 * Math.sin(Math.PI / 4)),
-      linkB: 74.5,
-      linkC: 95,
-      knee: { x: 267.06, y: 256.06 },
-      target: { x: 341.56, y: 351.06 },
-      groundY: 351.06,
+      femurPrimaryLength: configNumber(KINEMATIC_CONFIG.femurPrimaryLength, 51),
+      femurSecondaryLength: configNumber(KINEMATIC_CONFIG.femurSecondaryLength, 51),
+      femurSecondaryAngleDeg: configNumber(KINEMATIC_CONFIG.femurSecondaryAngleDeg, 45),
+      linkA: LEG_MOVER_LINK_A,
+      linkB: configNumber(KINEMATIC_CONFIG.tibiaLength, 74.5),
+      linkC: configNumber(KINEMATIC_CONFIG.footLength, 95),
+      knee: { ...LEG_MOVER_HOME_KNEE },
+      target: { ...LEG_MOVER_HOME_TARGET },
+      groundY: LEG_MOVER_HOME_TARGET.y,
       groundOffsetY: 0,
-      viewYaw: -35,
-      viewPitch: 24,
-      viewScale: 1,
+      viewYaw: configNumber(LEG_MOVER_UI_CONFIG.viewYawDeg, -35),
+      viewPitch: configNumber(LEG_MOVER_UI_CONFIG.viewPitchDeg, 24),
+      viewScale: configNumber(LEG_MOVER_UI_CONFIG.viewScale, 1),
       viewDragging: false,
       viewPointerStart: null,
       viewCaptureTarget: null,
-      viewStartYaw: -35,
-      viewStartPitch: 24,
+      viewStartYaw: configNumber(LEG_MOVER_UI_CONFIG.viewYawDeg, -35),
+      viewStartPitch: configNumber(LEG_MOVER_UI_CONFIG.viewPitchDeg, 24),
       three: null,
       coxaLocked: false,
       lockedCoxaAngle: null,
@@ -1280,15 +1322,15 @@
 
     const fullModel = {
       three: null,
-      bodyWidth: 169.45,
-      bodyHeight: 164.2,
-      topJointSpan: 121.5,
-      coxaLength: 75,
-      femurPrimaryLength: 51,
-      femurSecondaryLength: 51,
-      femurSecondaryAngleDeg: 45,
-      tibiaLength: 74.5,
-      footLength: 95,
+      bodyWidth: configNumber(KINEMATIC_CONFIG.bodyWidth, 169.45),
+      bodyHeight: configNumber(KINEMATIC_CONFIG.bodyHeight, 164.2),
+      topJointSpan: configNumber(KINEMATIC_CONFIG.topJointSpan, 121.5),
+      coxaLength: configNumber(KINEMATIC_CONFIG.coxaLength, 75),
+      femurPrimaryLength: configNumber(KINEMATIC_CONFIG.femurPrimaryLength, 51),
+      femurSecondaryLength: configNumber(KINEMATIC_CONFIG.femurSecondaryLength, 51),
+      femurSecondaryAngleDeg: configNumber(KINEMATIC_CONFIG.femurSecondaryAngleDeg, 45),
+      tibiaLength: configNumber(KINEMATIC_CONFIG.tibiaLength, 74.5),
+      footLength: configNumber(KINEMATIC_CONFIG.footLength, 95),
       renderQueued: false,
       previewActive: false,
       previewPlaying: false,
@@ -1480,17 +1522,21 @@
     }
 
     function getLegServoPair(legNumber = getSelectedLegNumber()) {
-      const baseIdx = (legNumber - 1) * 3;
+      const fallbackBaseIdx = (legNumber - 1) * JOINT_KEYS.length;
+      const servoId = (joint, fallbackOffset) => {
+        const config = getServoConfigForLegJoint(legNumber, joint);
+        return Number.isInteger(Number(config?.id)) ? Number(config.id) : fallbackBaseIdx + fallbackOffset;
+      };
       return {
-        coxa: baseIdx,
-        femur: baseIdx + 1,
-        tibia: baseIdx + 2
+        coxa: servoId('coxa', 0),
+        femur: servoId('femur', 1),
+        tibia: servoId('tibia', 2)
       };
     }
 
     function getLegMoverServoPairs() {
       if (!isAllLegsSelected()) return [getLegServoPair()];
-      return [1, 2, 3, 4, 5, 6].map((legNumber) => getLegServoPair(legNumber));
+      return Array.from({ length: LEG_COUNT }, (_, index) => getLegServoPair(index + 1));
     }
 
     function isLegMoverServoIdx(idx) {
@@ -1499,7 +1545,9 @@
 
     function readServoSliderAngle(idx) {
       const slider = document.getElementById('sl-' + idx);
-      return slider ? parseInt(slider.value) : (idx % 3 === 2 ? LEG_UI_HOME_TIBIA_DEG : 90);
+      const servoConfig = getServoConfig(idx);
+      const isTibia = servoConfig ? servoConfig.joint === 'tibia' : idx % JOINT_KEYS.length === 2;
+      return slider ? parseInt(slider.value) : (isTibia ? LEG_UI_HOME_TIBIA_DEG : configNumber(servoConfig?.centerAngleDeg, 90));
     }
 
     function syncLegMoverFromSliders() {
@@ -1708,21 +1756,33 @@
     }
 
     // ---------- BUILD LEG GRID ----------
+    function getServoConfig(idx) {
+      return SERVO_CONFIGS.find((servo) => Number(servo.id) === Number(idx));
+    }
+
+    function getServoConfigForLegJoint(leg, joint) {
+      return SERVO_CONFIGS.find((servo) => Number(servo.leg) === Number(leg) && servo.joint === joint);
+    }
+
     function buildLegGrid() {
       legsGrid.innerHTML = '';
-      for (let leg = 1; leg <= 6; leg++) {
+      for (let leg = 1; leg <= LEG_COUNT; leg++) {
         const legCard = document.createElement('div');
         legCard.className = 'leg-card';
         legCard.innerHTML = `<h4><span> Leg ${leg}</span><i class="fas fa-chevron-down" style="font-size:0.7rem; opacity:0.6;"></i></h4>`;
         const container = document.createElement('div');
         
-        for (let j = 0; j < 3; j++) {
-          const idx = (leg - 1) * 3 + j;
-          const defaultAngle = j === 2 ? LEG_UI_HOME_TIBIA_DEG : 90;
+        for (let j = 0; j < JOINT_KEYS.length; j++) {
+          const jointKey = JOINT_KEYS[j];
+          const servoConfig = getServoConfigForLegJoint(leg, jointKey);
+          const idx = Number.isInteger(Number(servoConfig?.id)) ? Number(servoConfig.id) : (leg - 1) * JOINT_KEYS.length + j;
+          if (idx >= NUM_SERVOS) continue;
+          const centerAngle = configNumber(servoConfig?.centerAngleDeg, 90);
+          const defaultAngle = jointKey === 'tibia' ? LEG_UI_HOME_TIBIA_DEG : centerAngle;
           const jointDiv = document.createElement('div');
           jointDiv.className = 'joint';
           jointDiv.innerHTML = `
-            <label>${JOINT_NAMES[j]}</label>
+            <label>${servoConfig?.name || JOINT_NAMES[j]}</label>
             <input id="sl-${idx}" type="range" min="0" max="180" value="${defaultAngle}" class="slider" oninput="window.onSlider(${idx}, this.value)">
             <span id="ang-${idx}" class="angle-badge">${defaultAngle} deg</span>
           `;
@@ -1734,8 +1794,10 @@
     }
 
     function getServoLabel(idx) {
-      const leg = Math.floor(idx / 3) + 1;
-      const joint = JOINT_NAMES[idx % 3];
+      const servoConfig = getServoConfig(idx);
+      if (servoConfig) return `Servo ${idx} · ${servoConfig.name}`;
+      const leg = Math.floor(idx / JOINT_KEYS.length) + 1;
+      const joint = JOINT_NAMES[idx % JOINT_KEYS.length];
       return `Servo ${idx} · Leg ${leg} ${joint}`;
     }
 
@@ -2279,6 +2341,11 @@
     }
 
     function getFullModelBasePoints() {
+      const sharedPoints = window.HexabotGaits?.basePoints?.();
+      if (Array.isArray(sharedPoints) && sharedPoints.length >= 6) {
+        return sharedPoints.slice(0, 6).map((point) => new THREE.Vector3(point.x, point.y, point.z));
+      }
+
       const halfW = fullModel.bodyWidth / 2;
       const halfH = fullModel.bodyHeight / 2;
       const halfTop = fullModel.topJointSpan / 2;
@@ -2425,25 +2492,25 @@
 
     function getGaitPreviewOptions() {
       const power = Number(gaitDirectionPower?.value || 0) / 100;
-      const requestedStride = Number(gaitStride?.value || 210);
-      const walkHeight = Number(gaitWalkHeight?.value || 0);
+      const requestedStride = Number(gaitStride?.value || DEFAULT_GAIT_STRIDE_MM);
+      const walkHeight = Number(gaitWalkHeight?.value || DEFAULT_GAIT_WALK_HEIGHT_MM);
       const baseTargets = window.HexabotGaits?.defaultFootTargets();
       if (baseTargets && walkHeight !== 0) {
-        for (let leg = 1; leg <= 6; leg++) {
+        for (let leg = 1; leg <= LEG_COUNT; leg++) {
           baseTargets[leg].y -= walkHeight;
         }
       }
       return {
-        directionDeg: Number(gaitDirection?.value || 0),
+        directionDeg: Number(gaitDirection?.value || DEFAULT_GAIT_DIRECTION_DEG),
         strideLength: Math.max(0, requestedStride * power),
-        liftHeight: Number(gaitLift?.value || 130),
-        durationMs: Number(gaitSpeed?.value || 2000),
+        liftHeight: Number(gaitLift?.value || DEFAULT_GAIT_LIFT_MM),
+        durationMs: Number(gaitSpeed?.value || DEFAULT_GAIT_DURATION_MS),
         baseTargets: baseTargets || undefined
       };
     }
 
     function getSelectedGaitType() {
-      return gaitType?.value || 'tripod';
+      return gaitType?.value || DEFAULT_GAIT_TYPE;
     }
 
     function getSelectedGaitLabel() {
@@ -2520,10 +2587,10 @@
           ? `${Number(gaitDirection?.value || 0)} deg · ${Math.round(power)}%`
           : 'Center';
       }
-      if (gaitStrideValue) gaitStrideValue.textContent = `${Number(gaitStride?.value || 210)} mm`;
-      if (gaitLiftValue) gaitLiftValue.textContent = `${Number(gaitLift?.value || 130)} mm`;
-      if (gaitWalkHeightValue) gaitWalkHeightValue.textContent = `${Number(gaitWalkHeight?.value || 0)} mm`;
-      if (gaitSpeedValue) gaitSpeedValue.textContent = `${(Number(gaitSpeed?.value || 2000) / 1000).toFixed(1)} s`;
+      if (gaitStrideValue) gaitStrideValue.textContent = `${Number(gaitStride?.value || DEFAULT_GAIT_STRIDE_MM)} mm`;
+      if (gaitLiftValue) gaitLiftValue.textContent = `${Number(gaitLift?.value || DEFAULT_GAIT_LIFT_MM)} mm`;
+      if (gaitWalkHeightValue) gaitWalkHeightValue.textContent = `${Number(gaitWalkHeight?.value || DEFAULT_GAIT_WALK_HEIGHT_MM)} mm`;
+      if (gaitSpeedValue) gaitSpeedValue.textContent = `${(Number(gaitSpeed?.value || DEFAULT_GAIT_DURATION_MS) / 1000).toFixed(1)} s`;
       if (gaitPreviewState) {
         gaitPreviewState.textContent = fullModel.previewActive
           ? (fullModel.previewPlaying ? 'Playing' : 'Preview')
@@ -2542,7 +2609,7 @@
       const frame = getSelectedGaitFrame(phase);
       if (!frame) return;
       fullModel.previewAngles = {};
-      for (let leg = 1; leg <= 6; leg++) {
+      for (let leg = 1; leg <= LEG_COUNT; leg++) {
         fullModel.previewAngles[leg] = frame.legs[leg].angles;
       }
       fullModel.previewActive = true;
@@ -2553,7 +2620,7 @@
     }
 
     function applyGaitAnglesToSliders(anglesByLeg) {
-      for (let leg = 1; leg <= 6; leg++) {
+      for (let leg = 1; leg <= LEG_COUNT; leg++) {
         const pair = getLegServoPair(leg);
         const angles = anglesByLeg?.[leg];
         if (!angles) continue;
@@ -2567,7 +2634,7 @@
 
     function sendGaitAnglesToServos(anglesByLeg) {
       let sent = 0;
-      for (let leg = 1; leg <= 6; leg++) {
+      for (let leg = 1; leg <= LEG_COUNT; leg++) {
         const pair = getLegServoPair(leg);
         const angles = anglesByLeg?.[leg];
         if (!angles) continue;
@@ -2703,7 +2770,7 @@
           ? window.HexabotGaits.gaitFrame(getSelectedGaitType(), phase, options)
           : window.HexabotGaits.tripodFrame(phase, options);
         const anglesByLeg = {};
-        for (let leg = 1; leg <= 6; leg++) {
+        for (let leg = 1; leg <= LEG_COUNT; leg++) {
           anglesByLeg[leg] = frame.legs[leg].angles;
         }
         fullModel.previewAngles = anglesByLeg;
@@ -2898,6 +2965,12 @@
     }
 
     function setupGaitPreviewControls() {
+      if (gaitType) gaitType.value = DEFAULT_GAIT_TYPE;
+      if (gaitDirection) gaitDirection.value = String(DEFAULT_GAIT_DIRECTION_DEG);
+      if (gaitStride) gaitStride.value = String(DEFAULT_GAIT_STRIDE_MM);
+      if (gaitLift) gaitLift.value = String(DEFAULT_GAIT_LIFT_MM);
+      if (gaitWalkHeight) gaitWalkHeight.value = String(DEFAULT_GAIT_WALK_HEIGHT_MM);
+      if (gaitSpeed) gaitSpeed.value = String(DEFAULT_GAIT_DURATION_MS);
       updateGaitPreviewLabels();
 
       if (gaitDirectionPad) {

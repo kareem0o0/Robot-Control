@@ -1,0 +1,95 @@
+{
+  "_comment": "Single configuration source for Hexabot geometry, gait defaults, UI defaults, and servo hardware mapping. Distances are millimeters unless a key says otherwise.",
+  "metadata": {
+    "_comment": "Human-facing identity for this robot configuration.",
+    "robotName": "Hexabot",
+    "revision": "v2",
+    "units": {
+      "length": "mm",
+      "angle": "degrees",
+      "pulse": "microseconds"
+    }
+  },
+  "kinematics": {
+    "_comment": "Physical model used by gait generation, inverse kinematics, and the controller visualizations.",
+    "body": {
+      "_comment": "Mount geometry for the six coxa joints. Set shapeMode to dimensions or points. Coordinates are from body center; x is side-to-side, z is front-to-back.",
+      "shapeMode": "points",
+      "widthMm": 169.45,
+      "heightMm": 164.2,
+      "topJointSpanMm": 121.5,
+      "points": [
+        { "leg": 1, "label": "front-left", "xMm": -60.75, "zMm": -82.1 },
+        { "leg": 2, "label": "middle-left", "xMm": -84.725, "zMm": 0 },
+        { "leg": 3, "label": "rear-left", "xMm": -60.75, "zMm": 82.1 },
+        { "leg": 4, "label": "rear-right", "xMm": 60.75, "zMm": 82.1 },
+        { "leg": 5, "label": "middle-right", "xMm": 84.725, "zMm": 0 },
+        { "leg": 6, "label": "front-right", "xMm": 60.75, "zMm": -82.1 }
+      ]
+    },
+    "links": {
+      "_comment": "Leg link lengths. The femur is modeled as two fixed segments with a constant bend angle.",
+      "coxaLengthMm": 75,
+      "femurPrimaryLengthMm": 51,
+      "femurSecondaryLengthMm": 51,
+      "femurSecondaryAngleDeg": 45,
+      "tibiaLengthMm": 74.5,
+      "footLengthMm": 95
+    },
+    "homeAngles": {
+      "_comment": "Logical servo home angles. uiTibiaHomeDeg is the standing UI pose for the tibia slider.",
+      "coxaHomeDeg": 90,
+      "femurHomeDeg": 90,
+      "tibiaHomeDeg": 90,
+      "uiTibiaHomeDeg": 135
+    }
+  },
+  "gaitDefaults": {
+    "_comment": "Default values used by the gait preview and servo gait playback controls.",
+    "type": "tripod",
+    "strideLengthMm": 210,
+    "liftHeightMm": 130,
+    "walkHeightMm": 0,
+    "durationMs": 2000,
+    "directionDeg": 0
+  },
+  "ui": {
+    "_comment": "Controller display defaults. These do not change robot physics, only the editor/viewer starting view.",
+    "legMover": {
+      "_comment": "2D/3D leg editor starting position and camera orientation.",
+      "baseX": 180,
+      "baseY": 220,
+      "viewYawDeg": -35,
+      "viewPitchDeg": 24,
+      "viewScale": 1
+    }
+  },
+  "servoHardware": {
+    "_comment": "Hardware servo mapping mirrored from firmware. The browser uses this for labels/reference; firmware still owns real pulse output.",
+    "defaultMinPulseUs": 500,
+    "defaultMaxPulseUs": 2400,
+    "defaultMinAngleDeg": 0,
+    "defaultMaxAngleDeg": 180,
+    "defaultCenterAngleDeg": 90,
+    "servos": [
+      { "id": 0, "name": "L1-Coxa", "leg": 1, "joint": "coxa", "driver": "PCA9685", "channel": 0, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 1, "name": "L1-Femur", "leg": 1, "joint": "femur", "driver": "PCA9685", "channel": 1, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 2, "name": "L1-Tibia", "leg": 1, "joint": "tibia", "driver": "PCA9685", "channel": 2, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 3, "name": "L2-Coxa", "leg": 2, "joint": "coxa", "driver": "PCA9685", "channel": 3, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 4, "name": "L2-Femur", "leg": 2, "joint": "femur", "driver": "PCA9685", "channel": 4, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 5, "name": "L2-Tibia", "leg": 2, "joint": "tibia", "driver": "PCA9685", "channel": 5, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 6, "name": "L3-Coxa", "leg": 3, "joint": "coxa", "driver": "PCA9685", "channel": 6, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 7, "name": "L3-Femur", "leg": 3, "joint": "femur", "driver": "PCA9685", "channel": 7, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 8, "name": "L3-Tibia", "leg": 3, "joint": "tibia", "driver": "PCA9685", "channel": 8, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 9, "name": "L4-Coxa", "leg": 4, "joint": "coxa", "driver": "PCA9685", "channel": 9, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 10, "name": "L4-Femur", "leg": 4, "joint": "femur", "driver": "PCA9685", "channel": 10, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 11, "name": "L4-Tibia", "leg": 4, "joint": "tibia", "driver": "PCA9685", "channel": 11, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 12, "name": "L5-Coxa", "leg": 5, "joint": "coxa", "driver": "PCA9685", "channel": 12, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 13, "name": "L5-Femur", "leg": 5, "joint": "femur", "driver": "PCA9685", "channel": 13, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 14, "name": "L5-Tibia", "leg": 5, "joint": "tibia", "driver": "PCA9685", "channel": 14, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 15, "name": "L6-Coxa", "leg": 6, "joint": "coxa", "driver": "PCA9685", "channel": 15, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 16, "name": "L6-Femur(G27)", "leg": 6, "joint": "femur", "driver": "ESP32_GPIO", "gpio": 27, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false },
+      { "id": 17, "name": "L6-Tibia(G14)", "leg": 6, "joint": "tibia", "driver": "ESP32_GPIO", "gpio": 14, "minPulseUs": 500, "maxPulseUs": 2400, "minAngleDeg": 0, "maxAngleDeg": 180, "centerAngleDeg": 90, "inverted": false }
+    ]
+  }
+}

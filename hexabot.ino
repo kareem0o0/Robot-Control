@@ -5,13 +5,13 @@
   Hardware:
     - ESP32 (dual-core)
     - PCA9685 servo driver (I2C) → servos 0–15
-    - 2 direct GPIO servos → servo 16 (GPIO26), servo 17 (GPIO14)
+    - 2 direct GPIO servos → servo 16 (GPIO27), servo 17 (GPIO14)
     - Total: 18 servos, 6 legs × 3 joints
 
   ⚠️  GPIO12 WARNING (see bottom of file and WIRING NOTES)
       GPIO12 is a bootstrap pin on ESP32. Using it as a servo
       output can prevent boot if the signal is high at reset.
-      We use GPIO26 instead for servo 16.
+      We use GPIO27 instead for servo 16.
 
   Features:
     - WiFi + OTA firmware update
@@ -118,8 +118,8 @@ ServoConfig servoConfig[NUM_SERVOS] = {
     { "L5-Femur",         500,     2400,      0,       180,      90,  false, 5, 2 },
     { "L5-Tibia",         500,     2400,      0,       180,      90,  false, 5, 3 },
     { "L6-Coxa",          500,     2400,      0,       180,      90,  false, 6, 1 },
-    // Servo 16 → GPIO26
-    { "L6-Femur(G26)",    500,     2400,      0,       180,      90,  false, 6, 2 },
+    // Servo 16 → GPIO27
+    { "L6-Femur(G27)",    500,     2400,      0,       180,      90,  false, 6, 2 },
     // Servo 17 → GPIO14
     { "L6-Tibia(G14)",    500,     2400,      0,       180,      90,  false, 6, 3 },
 };

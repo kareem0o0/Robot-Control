@@ -114,6 +114,9 @@ hexabot/
 â”œâ”€â”€ main-dashboard.html               # Top-level project dashboard
 â”œâ”€â”€ hexabot-modules.html              # Hexabot module launcher
 â”œâ”€â”€ hexabot-servo-controller.html     # Servo control interface
+â”œâ”€â”€ hexabot-config.json               # Source-of-truth robot parameters
+â”œâ”€â”€ hexabot-config.js                 # Generated file-mode config bootstrap
+â”œâ”€â”€ sync-config.js                    # Regenerates bootstrap from JSON
 â”œâ”€â”€ hexapod_UI.h              # Legacy ESP32 reference (do not modify)
 â”œâ”€â”€ hexabot.ino               # ESP32 firmware
 â””â”€â”€ README.md                 # This file
