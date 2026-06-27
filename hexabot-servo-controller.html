@@ -1175,6 +1175,7 @@
       17: 10  // Leg 6 Tibia: 90 -> 100
     };
     const CALIBRATION_STORAGE_KEY = 'hexabot-servo-calibration-v1';
+    const SELECTED_ENDPOINT_KEY = 'hexapod-selected-endpoint';
     const lastCommandByServo = {};
     const homeReturnTimers = [];
     let servoCalibrationOffsets = loadServoCalibrationOffsets();
@@ -1185,6 +1186,8 @@
 
     // DOM elements
     const wsUrlInput = document.getElementById('ws-url');
+    const selectedEndpoint = localStorage.getItem(SELECTED_ENDPOINT_KEY);
+    if (selectedEndpoint) wsUrlInput.value = selectedEndpoint;
     const wsOpenBtn = document.getElementById('ws-open');
     const wsCloseBtn = document.getElementById('ws-close');
     const wsLed = document.getElementById('ws-led');

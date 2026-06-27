@@ -574,7 +574,6 @@
     }
 
     input,
-    select,
     textarea {
       width: 100%;
       background: #15222e;
@@ -586,6 +585,42 @@
       padding: 0.55rem 0.65rem;
     }
 
+    select {
+      width: 100%;
+      min-height: 38px;
+      appearance: none;
+      background:
+        linear-gradient(45deg, transparent 50%, #9fd9c4 50%) right 0.92rem center / 7px 7px no-repeat,
+        linear-gradient(135deg, #1d3343, #142533);
+      border: 1px solid #31506a;
+      border-radius: 8px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      color: #e9f7fb;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 750;
+      padding: 0.55rem 2.05rem 0.55rem 0.75rem;
+      transition: border-color var(--transition), background-color var(--transition), box-shadow var(--transition), transform var(--transition);
+    }
+
+    select:hover {
+      border-color: #3ccf91;
+      box-shadow: 0 0 0 3px rgba(60, 207, 145, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    select:focus,
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(60, 207, 145, 0.16);
+      outline: none;
+    }
+
+    select option {
+      background: #101b24;
+      color: var(--text);
+    }
+
     textarea {
       min-height: 142px;
       resize: vertical;
@@ -594,10 +629,81 @@
       line-height: 1.5;
     }
 
+    .description-field {
+      grid-column: 1 / -1;
+    }
+
+    textarea[name="description"] {
+      min-height: 86px;
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+
+    input[type="number"] {
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
     .form-note {
       color: var(--muted);
       font-size: 0.8rem;
       line-height: 1.45;
+    }
+
+    .mode-fields {
+      margin-top: 0.85rem;
+    }
+
+    .mode-fields.hidden {
+      display: none;
+    }
+
+    .point-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .point-row {
+      display: grid;
+      grid-template-columns: minmax(110px, 1fr) minmax(78px, 0.7fr) minmax(78px, 0.7fr);
+      gap: 0.55rem;
+      align-items: end;
+      background: rgba(17, 30, 41, 0.62);
+      border: 1px solid rgba(60, 207, 145, 0.12);
+      border-left: 3px solid rgba(60, 207, 145, 0.42);
+      border-radius: 8px;
+      padding: 0.65rem;
+    }
+
+    .point-row:hover {
+      background: rgba(20, 39, 51, 0.82);
+      border-color: rgba(60, 207, 145, 0.28);
+      border-left-color: var(--accent);
+    }
+
+    .point-label {
+      align-self: center;
+      color: #cbe5ff;
+      font-size: 0.82rem;
+      font-weight: 750;
+      padding-bottom: 0;
+    }
+
+    .link-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+
+    .link-row {
+      display: block;
     }
 
     @media (max-width: 860px) {
@@ -628,8 +734,19 @@
 
       .stats-grid,
       .project-cards,
-      .form-grid {
+      .form-grid,
+      .point-grid,
+      .link-grid {
         grid-template-columns: 1fr;
+      }
+
+      .point-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .point-label {
+        grid-column: 1 / -1;
+        padding-bottom: 0;
       }
     }
   </style>
@@ -778,31 +895,16 @@
       </div>
       <form class="project-form" id="project-form">
         <section class="form-section">
-          <h3>Identity</h3>
+          <h3>Project</h3>
           <div class="form-grid">
             <label>Project Name
               <input name="name" required placeholder="Hexabot V3">
             </label>
-            <label>Project ID / Folder Slug
-              <input name="id" required pattern="[a-z0-9-]+" placeholder="hexabot-v3">
-            </label>
-            <label>Family
-              <select name="family">
-                <option value="hexapod">Hexapod</option>
-                <option value="quadruped">Quadruped</option>
-                <option value="rover">Rover</option>
-                <option value="arm">Arm</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label>Revision
-              <input name="revision" placeholder="v1">
-            </label>
-            <label>Module Launcher
-              <input name="moduleUrl" placeholder="hexabot-modules.html">
-            </label>
             <label>WebSocket Endpoint
-              <input name="endpoint" placeholder="ws://192.168.1.42/ws">
+              <input name="endpoint" required placeholder="ws://192.168.1.61/ws">
+            </label>
+            <label class="description-field">Project Description
+              <textarea name="description" placeholder="Optional notes about this robot"></textarea>
             </label>
           </div>
         </section>
@@ -816,6 +918,8 @@
                 <option value="points">Points</option>
               </select>
             </label>
+          </div>
+          <div class="form-grid mode-fields" id="dimension-fields">
             <label>Width mm
               <input name="widthMm" type="number" step="0.001">
             </label>
@@ -826,62 +930,30 @@
               <input name="topJointSpanMm" type="number" step="0.001">
             </label>
           </div>
-          <label style="margin-top: 0.85rem;">Body Points JSON
-            <textarea name="points"></textarea>
-          </label>
-          <p class="form-note">Points are centered coxa mount coordinates using x side-to-side and z front-to-back. Use them when your hexapod body is not symmetric enough for width/height/span.</p>
-        </section>
-
-        <section class="form-section">
-          <h3>Leg Links</h3>
-          <div class="form-grid">
-            <label>Coxa mm
-              <input name="coxaLengthMm" type="number" step="0.001">
-            </label>
-            <label>Femur Primary mm
-              <input name="femurPrimaryLengthMm" type="number" step="0.001">
-            </label>
-            <label>Femur Secondary mm
-              <input name="femurSecondaryLengthMm" type="number" step="0.001">
-            </label>
-            <label>Femur Bend deg
-              <input name="femurSecondaryAngleDeg" type="number" step="0.001">
-            </label>
-            <label>Tibia mm
-              <input name="tibiaLengthMm" type="number" step="0.001">
-            </label>
-            <label>Foot mm
-              <input name="footLengthMm" type="number" step="0.001">
-            </label>
+          <div class="mode-fields hidden" id="point-fields">
+            <div class="point-grid" id="body-point-grid"></div>
+            <p class="form-note" style="margin-top: 0.75rem;">Points are centered coxa mount coordinates from the body origin. X is side-to-side, Y is front-to-back.</p>
           </div>
         </section>
 
         <section class="form-section">
-          <h3>Home Angles and Hardware</h3>
-          <div class="form-grid">
-            <label>Coxa Home deg
-              <input name="coxaHomeDeg" type="number" step="0.001">
-            </label>
-            <label>Femur Home deg
-              <input name="femurHomeDeg" type="number" step="0.001">
-            </label>
-            <label>Tibia Home deg
-              <input name="tibiaHomeDeg" type="number" step="0.001">
-            </label>
-            <label>UI Tibia Home deg
-              <input name="uiTibiaHomeDeg" type="number" step="0.001">
-            </label>
-            <label>Servo Count
-              <input name="servoCount" type="number" min="0" step="1">
-            </label>
-            <label>Controller
-              <select name="controller">
-                <option value="ESP32">ESP32</option>
-                <option value="Arduino">Arduino</option>
-                <option value="Raspberry Pi">Raspberry Pi</option>
-                <option value="Custom">Custom</option>
-              </select>
-            </label>
+          <h3>Leg Links</h3>
+          <div class="link-grid">
+            <div class="link-row">
+              <label>Coxa Length mm
+                <input name="coxaLengthMm" type="number" step="0.001">
+              </label>
+            </div>
+            <div class="link-row">
+              <label>Femur Length mm
+                <input name="femurLengthMm" type="number" step="0.001">
+              </label>
+            </div>
+            <div class="link-row">
+              <label>Tibia Length mm
+                <input name="tibiaLengthMm" type="number" step="0.001">
+              </label>
+            </div>
           </div>
         </section>
 
@@ -898,21 +970,30 @@
     const REGISTRY_PATH = 'project/hexapods.json';
     const REGISTRY_API = '/api/hexapods';
     const REGISTRY_MIRROR_KEY = 'hexapod-project-registry-mirror';
+    const SELECTED_PROJECT_KEY = 'hexapod-selected-project';
+    const SELECTED_ENDPOINT_KEY = 'hexapod-selected-endpoint';
     const defaultConfig = window.HexabotRobotConfig || {};
     const defaultBody = defaultConfig.kinematics?.body || {};
     const defaultLinks = defaultConfig.kinematics?.links || {};
-    const defaultHome = defaultConfig.kinematics?.homeAngles || {};
-    const defaultServos = defaultConfig.servoHardware?.servos || [];
+    const defaultPoints = [
+      { leg: 1, label: 'Front Left', xMm: -60.75, yMm: -82.1 },
+      { leg: 2, label: 'Middle Left', xMm: -84.725, yMm: 0 },
+      { leg: 3, label: 'Rear Left', xMm: -60.75, yMm: 82.1 },
+      { leg: 4, label: 'Rear Right', xMm: 60.75, yMm: 82.1 },
+      { leg: 5, label: 'Middle Right', xMm: 84.725, yMm: 0 },
+      { leg: 6, label: 'Front Right', xMm: 60.75, yMm: -82.1 }
+    ];
     let registryFileHandle = null;
     let registryProjects = [];
 
     const seedProject = {
       id: 'hexabot-v2',
       name: 'Hexabot V2',
+      description: 'Default Hexabot platform.',
       family: 'hexapod',
       revision: defaultConfig.metadata?.revision || 'v2',
       moduleUrl: 'hexabot-modules.html',
-      endpoint: 'ws://192.168.1.42/ws',
+      endpoint: 'ws://192.168.1.61/ws',
       controller: 'ESP32',
       status: 'active',
       configFile: 'hexabot-config.json',
@@ -944,6 +1025,14 @@
     function numberValue(formData, key, fallback = 0) {
       const value = Number(formData.get(key));
       return Number.isFinite(value) ? value : fallback;
+    }
+
+    function firstNumber(...values) {
+      for (const value of values) {
+        const number = Number(value);
+        if (Number.isFinite(number)) return number;
+      }
+      return 0;
     }
 
     function getMirrorProjects() {
@@ -1012,20 +1101,20 @@
 
       const body = project.kinematics?.body || {};
       const links = project.kinematics?.links || {};
-      const servoCount = project.servoHardware?.servos?.length || project.servoCount || 0;
       const shapeLabel = body.shapeMode === 'points' ? 'Point-defined body' : 'Dimension-defined body';
+      const femurLength = links.femurLengthMm ?? links.femurPrimaryLengthMm ?? '-';
       card.innerHTML = `
         <div class="card-header">
           <div class="card-icon"><i class="fas fa-robot"></i></div>
           <div>
             <div class="card-title">${escapeHtml(project.name || project.id)}</div>
-            <div class="card-sub">${escapeHtml(project.family || 'hexapod')} · ${escapeHtml(project.revision || 'unversioned')}</div>
+            <div class="card-sub">${escapeHtml(project.endpoint || 'No endpoint saved')}</div>
           </div>
         </div>
         <div class="feature-list">
-          <div><i class="fas fa-check-circle"></i> ${servoCount || 18} servos · ${escapeHtml(project.controller || 'Controller TBD')}</div>
+          ${project.description ? `<div><i class="fas fa-check-circle"></i> ${escapeHtml(project.description)}</div>` : ''}
           <div><i class="fas fa-check-circle"></i> ${shapeLabel}</div>
-          <div><i class="fas fa-check-circle"></i> Coxa ${links.coxaLengthMm ?? '-'} mm · Tibia ${links.tibiaLengthMm ?? '-'} mm</div>
+          <div><i class="fas fa-check-circle"></i> Coxa ${links.coxaLengthMm ?? '-'} mm · Femur ${femurLength} mm · Tibia ${links.tibiaLengthMm ?? '-'} mm</div>
         </div>
         <span class="${project.status === 'active' ? 'badge-active' : 'badge-coming'}"><i class="fas fa-${project.status === 'active' ? 'bolt' : 'clock'}"></i> ${project.status === 'active' ? 'ACTIVE' : 'SAVED'}</span>
         <div class="card-actions">
@@ -1041,6 +1130,7 @@
       });
       card.querySelector('[data-edit]')?.addEventListener('click', () => openProjectModal(project.id));
       card.querySelector('[data-delete]')?.addEventListener('click', () => deleteProject(project.id));
+      card.addEventListener('click', () => selectProject(project));
       return card;
     }
 
@@ -1083,56 +1173,90 @@
       document.getElementById('project-modal').classList.add('hidden');
     }
 
+    function normalizePoint(point, fallback) {
+      return {
+        leg: Number(point?.leg ?? fallback.leg),
+        label: point?.label || fallback.label,
+        xMm: firstNumber(point?.xMm, point?.x, fallback.xMm),
+        yMm: firstNumber(point?.yMm, point?.y, point?.zMm, point?.z, fallback.yMm)
+      };
+    }
+
+    function getProjectPoints(body = {}) {
+      const source = Array.isArray(body.points) ? body.points : [];
+      return defaultPoints.map((fallback, index) => {
+        const matchingPoint = source.find((point) => Number(point?.leg) === fallback.leg);
+        return normalizePoint(matchingPoint || source[index], fallback);
+      });
+    }
+
+    function buildBodyPointFields() {
+      const grid = document.getElementById('body-point-grid');
+      if (!grid || grid.children.length) return;
+      defaultPoints.forEach((point) => {
+        const row = document.createElement('div');
+        row.className = 'point-row';
+        row.innerHTML = `
+          <div class="point-label">Leg ${point.leg} ${point.label}</div>
+          <label>X mm
+            <input name="point${point.leg}X" type="number" step="0.001">
+          </label>
+          <label>Y mm
+            <input name="point${point.leg}Y" type="number" step="0.001">
+          </label>
+        `;
+        grid.appendChild(row);
+      });
+    }
+
+    function updateShapeModeFields() {
+      const mode = document.getElementById('project-form').elements.shapeMode.value;
+      document.getElementById('dimension-fields')?.classList.toggle('hidden', mode !== 'dimensions');
+      document.getElementById('point-fields')?.classList.toggle('hidden', mode !== 'points');
+    }
+
     function fillProjectForm(project = null) {
       const form = document.getElementById('project-form');
       const body = project?.kinematics?.body || defaultBody;
       const links = project?.kinematics?.links || defaultLinks;
-      const home = project?.kinematics?.homeAngles || defaultHome;
+      const points = getProjectPoints(body);
       form.reset();
       form.elements.name.value = project?.name || 'Hexabot V3';
-      form.elements.id.value = project?.id || 'hexabot-v3';
-      form.elements.revision.value = project?.revision || 'v1';
-      form.elements.family.value = project?.family || 'hexapod';
-      form.elements.moduleUrl.value = project?.moduleUrl || 'hexabot-modules.html';
+      form.elements.description.value = project?.description || '';
       form.elements.endpoint.value = project?.endpoint || seedProject.endpoint;
       form.elements.shapeMode.value = body.shapeMode || 'dimensions';
       form.elements.widthMm.value = body.widthMm ?? 169.45;
       form.elements.heightMm.value = body.heightMm ?? 164.2;
       form.elements.topJointSpanMm.value = body.topJointSpanMm ?? 121.5;
-      form.elements.points.value = JSON.stringify(body.points || [], null, 2);
+      points.forEach((point) => {
+        form.elements[`point${point.leg}X`].value = point.xMm;
+        form.elements[`point${point.leg}Y`].value = point.yMm;
+      });
       form.elements.coxaLengthMm.value = links.coxaLengthMm ?? 75;
-      form.elements.femurPrimaryLengthMm.value = links.femurPrimaryLengthMm ?? 51;
-      form.elements.femurSecondaryLengthMm.value = links.femurSecondaryLengthMm ?? 51;
-      form.elements.femurSecondaryAngleDeg.value = links.femurSecondaryAngleDeg ?? 45;
+      form.elements.femurLengthMm.value = links.femurLengthMm ?? links.femurPrimaryLengthMm ?? 51;
       form.elements.tibiaLengthMm.value = links.tibiaLengthMm ?? 74.5;
-      form.elements.footLengthMm.value = links.footLengthMm ?? 95;
-      form.elements.coxaHomeDeg.value = home.coxaHomeDeg ?? 90;
-      form.elements.femurHomeDeg.value = home.femurHomeDeg ?? 90;
-      form.elements.tibiaHomeDeg.value = home.tibiaHomeDeg ?? 90;
-      form.elements.uiTibiaHomeDeg.value = home.uiTibiaHomeDeg ?? 135;
-      form.elements.servoCount.value = project?.servoHardware?.servos?.length || project?.servoCount || defaultServos.length || 18;
-      form.elements.controller.value = project?.controller || 'ESP32';
+      updateShapeModeFields();
     }
 
     function projectFromForm(form, previousProject = null) {
       const data = new FormData(form);
-      let points = [];
-      try {
-        points = JSON.parse(data.get('points') || '[]');
-      } catch (error) {
-        throw new Error('Body points must be valid JSON.');
-      }
-      if (!Array.isArray(points)) throw new Error('Body points must be a JSON array.');
-      const servoCount = Math.max(0, Math.round(numberValue(data, 'servoCount', 18)));
       const now = new Date().toISOString();
+      const name = String(data.get('name') || 'Hexabot Project').trim();
+      const points = defaultPoints.map((point) => ({
+        leg: point.leg,
+        label: point.label,
+        xMm: numberValue(data, `point${point.leg}X`, point.xMm),
+        yMm: numberValue(data, `point${point.leg}Y`, point.yMm),
+        zMm: numberValue(data, `point${point.leg}Y`, point.yMm)
+      }));
+      const femurLengthMm = numberValue(data, 'femurLengthMm', 51);
       return {
-        id: slugify(data.get('id') || data.get('name')),
-        name: String(data.get('name') || 'Hexabot Project').trim(),
-        family: String(data.get('family') || 'hexapod'),
-        revision: String(data.get('revision') || 'v1').trim(),
-        moduleUrl: String(data.get('moduleUrl') || '').trim(),
+        id: previousProject?.id || slugify(name),
+        name,
+        description: String(data.get('description') || '').trim(),
+        family: 'hexapod',
+        moduleUrl: previousProject?.moduleUrl || 'hexabot-modules.html',
         endpoint: String(data.get('endpoint') || '').trim(),
-        controller: String(data.get('controller') || 'ESP32'),
         status: previousProject?.status || 'saved',
         kinematics: {
           body: {
@@ -1146,40 +1270,26 @@
           links: {
             _comment: 'Leg link lengths for this project.',
             coxaLengthMm: numberValue(data, 'coxaLengthMm', 75),
-            femurPrimaryLengthMm: numberValue(data, 'femurPrimaryLengthMm', 51),
-            femurSecondaryLengthMm: numberValue(data, 'femurSecondaryLengthMm', 51),
-            femurSecondaryAngleDeg: numberValue(data, 'femurSecondaryAngleDeg', 45),
-            tibiaLengthMm: numberValue(data, 'tibiaLengthMm', 74.5),
-            footLengthMm: numberValue(data, 'footLengthMm', 95)
-          },
-          homeAngles: {
-            _comment: 'Logical neutral angles for this project.',
-            coxaHomeDeg: numberValue(data, 'coxaHomeDeg', 90),
-            femurHomeDeg: numberValue(data, 'femurHomeDeg', 90),
-            tibiaHomeDeg: numberValue(data, 'tibiaHomeDeg', 90),
-            uiTibiaHomeDeg: numberValue(data, 'uiTibiaHomeDeg', 135)
+            femurLengthMm,
+            femurPrimaryLengthMm: femurLengthMm,
+            tibiaLengthMm: numberValue(data, 'tibiaLengthMm', 74.5)
           }
-        },
-        servoCount,
-        servoHardware: {
-          _comment: 'Expand this with per-servo calibration when hardware mapping is final.',
-          servos: Array.from({ length: servoCount }, (_, id) => ({
-            id,
-            leg: Math.floor(id / 3) + 1,
-            joint: ['coxa', 'femur', 'tibia'][id % 3] || 'joint',
-            centerAngleDeg: 90,
-            minAngleDeg: 0,
-            maxAngleDeg: 180,
-            minPulseUs: 500,
-            maxPulseUs: 2400,
-            inverted: false
-          }))
         },
         configFile: previousProject?.configFile,
         createdAt: previousProject?.createdAt || now,
         updatedAt: now,
         registryPath: REGISTRY_PATH
       };
+    }
+
+    function selectProject(project) {
+      const selected = {
+        id: project.id,
+        name: project.name,
+        endpoint: project.endpoint || seedProject.endpoint
+      };
+      localStorage.setItem(SELECTED_PROJECT_KEY, JSON.stringify(selected));
+      localStorage.setItem(SELECTED_ENDPOINT_KEY, selected.endpoint);
     }
 
     async function connectRegistryFile() {
@@ -1249,7 +1359,7 @@
       }
       const conflictingProject = getAllProjects().find((item) => item.id === project.id && item.id !== editingProjectId);
       if (conflictingProject) {
-        showMessage('Project ID already exists', `Choose a different ID than ${project.id}.`);
+        showMessage('Project name already exists', `Choose a different project name than ${project.name}.`);
         return;
       }
       registryProjects = getAllProjects().filter((item) => item.id !== project.id);
@@ -1276,9 +1386,9 @@
     }
 
     function copyEndpoint() {
-      const endpoint = 'ws://192.168.1.42/ws';
+      const endpoint = localStorage.getItem(SELECTED_ENDPOINT_KEY) || getAllProjects()[0]?.endpoint || seedProject.endpoint;
       navigator.clipboard.writeText(endpoint).then(() => {
-        showMessage('ESP32 Endpoint', 'Copied ws://192.168.1.42/ws');
+        showMessage('ESP32 Endpoint', `Copied ${endpoint}`);
       }).catch(() => {
         showMessage('ESP32 Endpoint', endpoint);
       });
@@ -1299,6 +1409,8 @@
       }
       await loadRegistry();
       renderProjects();
+      buildBodyPointFields();
+      document.getElementById('project-form').elements.shapeMode.addEventListener('change', updateShapeModeFields);
       document.getElementById('add-project-slot').addEventListener('click', () => openProjectModal());
       document.getElementById('project-form').addEventListener('submit', async (event) => {
         event.preventDefault();

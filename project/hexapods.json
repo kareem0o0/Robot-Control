@@ -7,7 +7,7 @@
       "family": "hexapod",
       "revision": "v2",
       "moduleUrl": "hexabot-modules.html",
-      "endpoint": "ws://192.168.1.42/ws",
+      "endpoint": "ws://192.168.1.61/ws",
       "controller": "ESP32",
       "status": "active",
       "configFile": "hexabot-config.json"
