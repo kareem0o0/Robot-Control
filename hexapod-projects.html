@@ -706,6 +706,121 @@
       display: block;
     }
 
+    .advanced-config {
+      background: var(--bg-panel);
+      border: 1px solid #1e3140;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .advanced-config summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      cursor: pointer;
+      color: #cbe5ff;
+      font-size: 0.95rem;
+      font-weight: 750;
+      list-style: none;
+      padding: 1rem;
+    }
+
+    .advanced-config summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .advanced-config summary::after {
+      content: "\f078";
+      color: var(--accent);
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      transition: transform var(--transition);
+    }
+
+    .advanced-config[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .advanced-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      border-top: 1px solid #1e3140;
+      padding: 0 1rem 1rem;
+    }
+
+    .advanced-subsection {
+      border-top: 1px solid rgba(127, 149, 168, 0.14);
+      padding-top: 1rem;
+    }
+
+    .advanced-subsection:first-child {
+      border-top: 0;
+    }
+
+    .advanced-subsection h4 {
+      color: #b9d7ea;
+      font-size: 0.86rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .servo-map {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    #servo-map-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .servo-map-header,
+    .servo-row {
+      display: grid;
+      grid-template-columns: 48px minmax(92px, 1.25fr) 54px 82px minmax(96px, 1fr) 78px repeat(5, 86px) 78px;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    .servo-map-header {
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .servo-row {
+      background: rgba(17, 30, 41, 0.62);
+      border: 1px solid rgba(60, 207, 145, 0.12);
+      border-left: 3px solid rgba(60, 207, 145, 0.42);
+      border-radius: 8px;
+      padding: 0.55rem;
+    }
+
+    .servo-row input,
+    .servo-row select {
+      min-height: 34px;
+      padding-top: 0.42rem;
+      padding-bottom: 0.42rem;
+      font-size: 0.78rem;
+    }
+
+    .servo-row .check-cell {
+      align-items: center;
+      flex-direction: row;
+      justify-content: center;
+    }
+
+    .servo-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      min-height: 18px;
+      accent-color: var(--accent);
+    }
+
     @media (max-width: 860px) {
       body {
         padding: 1rem;
@@ -747,6 +862,14 @@
       .point-label {
         grid-column: 1 / -1;
         padding-bottom: 0;
+      }
+
+      .servo-map-header {
+        display: none;
+      }
+
+      .servo-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
   </style>
@@ -957,6 +1080,33 @@
           </div>
         </section>
 
+        <details class="advanced-config">
+          <summary><span><i class="fas fa-sliders-h"></i> Advanced Servo Mapping</span></summary>
+          <div class="advanced-content">
+            <section class="advanced-subsection">
+              <h4>Servo ID to Hardware Mapping</h4>
+              <div class="servo-map" id="servo-map">
+                <div class="servo-map-header">
+                  <span>ID</span>
+                  <span>Name</span>
+                  <span>Leg</span>
+                  <span>Joint</span>
+                  <span>Driver</span>
+                  <span>Pin/Ch</span>
+                  <span>Min us</span>
+                  <span>Max us</span>
+                  <span>Min deg</span>
+                  <span>Max deg</span>
+                  <span>Center</span>
+                  <span>Invert</span>
+                </div>
+                <div id="servo-map-rows"></div>
+              </div>
+              <p class="form-note">This maps the logical servo_id sent by the browser to the hardware driver channel or GPIO used by firmware.</p>
+            </section>
+          </div>
+        </details>
+
         <div class="modal-footer">
           <button type="button" class="btn" style="width:auto; margin:0;" onclick="closeProjectModal()">Cancel</button>
           <button type="submit" class="btn" style="width:auto; margin:0;"><i class="fas fa-save"></i> Save Project</button>
@@ -975,6 +1125,7 @@
     const defaultConfig = window.HexabotRobotConfig || {};
     const defaultBody = defaultConfig.kinematics?.body || {};
     const defaultLinks = defaultConfig.kinematics?.links || {};
+    const defaultServoHardware = defaultConfig.servoHardware || {};
     const defaultPoints = [
       { leg: 1, label: 'Front Left', xMm: -60.75, yMm: -82.1 },
       { leg: 2, label: 'Middle Left', xMm: -84.725, yMm: 0 },
@@ -1215,10 +1366,115 @@
       document.getElementById('point-fields')?.classList.toggle('hidden', mode !== 'points');
     }
 
+    function defaultServoRows() {
+      if (Array.isArray(defaultServoHardware.servos) && defaultServoHardware.servos.length) {
+        return defaultServoHardware.servos;
+      }
+      return Array.from({ length: 18 }, (_, id) => ({
+        id,
+        name: `L${Math.floor(id / 3) + 1}-${['Coxa', 'Femur', 'Tibia'][id % 3]}`,
+        leg: Math.floor(id / 3) + 1,
+        joint: ['coxa', 'femur', 'tibia'][id % 3],
+        driver: 'PCA9685',
+        channel: id,
+        minPulseUs: 500,
+        maxPulseUs: 2400,
+        minAngleDeg: 0,
+        maxAngleDeg: 180,
+        centerAngleDeg: 90,
+        inverted: false
+      }));
+    }
+
+    function buildServoMappingFields() {
+      const rows = document.getElementById('servo-map-rows');
+      if (!rows || rows.children.length) return;
+      defaultServoRows().forEach((servo, index) => {
+        const row = document.createElement('div');
+        row.className = 'servo-row';
+        row.dataset.servoIndex = String(index);
+        row.innerHTML = `
+          <input name="servo${index}Id" type="number" step="1" aria-label="Servo ID">
+          <input name="servo${index}Name" aria-label="Servo Name">
+          <input name="servo${index}Leg" type="number" step="1" aria-label="Leg">
+          <select name="servo${index}Joint" aria-label="Joint">
+            <option value="coxa">coxa</option>
+            <option value="femur">femur</option>
+            <option value="tibia">tibia</option>
+          </select>
+          <select name="servo${index}Driver" aria-label="Driver">
+            <option value="PCA9685">PCA9685</option>
+            <option value="ESP32_GPIO">ESP32 GPIO</option>
+          </select>
+          <input name="servo${index}Output" type="number" step="1" aria-label="Pin or channel">
+          <input name="servo${index}MinPulseUs" type="number" step="1" aria-label="Minimum pulse">
+          <input name="servo${index}MaxPulseUs" type="number" step="1" aria-label="Maximum pulse">
+          <input name="servo${index}MinAngleDeg" type="number" step="0.001" aria-label="Minimum angle">
+          <input name="servo${index}MaxAngleDeg" type="number" step="0.001" aria-label="Maximum angle">
+          <input name="servo${index}CenterAngleDeg" type="number" step="0.001" aria-label="Center angle">
+          <label class="check-cell" aria-label="Inverted">
+            <input name="servo${index}Inverted" type="checkbox">
+          </label>
+        `;
+        rows.appendChild(row);
+      });
+    }
+
+    function setServoMappingFields(servos = defaultServoRows()) {
+      const form = document.getElementById('project-form');
+      const rows = defaultServoRows();
+      rows.forEach((fallback, index) => {
+        const servo = servos[index] || fallback;
+        form.elements[`servo${index}Id`].value = servo.id ?? fallback.id;
+        form.elements[`servo${index}Name`].value = servo.name || fallback.name;
+        form.elements[`servo${index}Leg`].value = servo.leg ?? fallback.leg;
+        form.elements[`servo${index}Joint`].value = servo.joint || fallback.joint;
+        form.elements[`servo${index}Driver`].value = servo.driver || fallback.driver;
+        form.elements[`servo${index}Output`].value = servo.driver === 'ESP32_GPIO'
+          ? (servo.gpio ?? fallback.gpio ?? '')
+          : (servo.channel ?? fallback.channel ?? '');
+        form.elements[`servo${index}MinPulseUs`].value = servo.minPulseUs ?? defaultServoHardware.defaultMinPulseUs ?? 500;
+        form.elements[`servo${index}MaxPulseUs`].value = servo.maxPulseUs ?? defaultServoHardware.defaultMaxPulseUs ?? 2400;
+        form.elements[`servo${index}MinAngleDeg`].value = servo.minAngleDeg ?? defaultServoHardware.defaultMinAngleDeg ?? 0;
+        form.elements[`servo${index}MaxAngleDeg`].value = servo.maxAngleDeg ?? defaultServoHardware.defaultMaxAngleDeg ?? 180;
+        form.elements[`servo${index}CenterAngleDeg`].value = servo.centerAngleDeg ?? defaultServoHardware.defaultCenterAngleDeg ?? 90;
+        form.elements[`servo${index}Inverted`].checked = Boolean(servo.inverted);
+      });
+    }
+
+    function collectServoMapping(form) {
+      const data = new FormData(form);
+      return defaultServoRows().map((fallback, index) => {
+        const driver = String(form.elements[`servo${index}Driver`].value || fallback.driver || 'PCA9685');
+        const output = Number(form.elements[`servo${index}Output`].value);
+        const servo = {
+          id: numberValue(data, `servo${index}Id`, fallback.id),
+          name: String(form.elements[`servo${index}Name`].value || fallback.name).trim(),
+          leg: numberValue(data, `servo${index}Leg`, fallback.leg),
+          joint: String(form.elements[`servo${index}Joint`].value || fallback.joint),
+          driver,
+          minPulseUs: numberValue(data, `servo${index}MinPulseUs`, defaultServoHardware.defaultMinPulseUs ?? 500),
+          maxPulseUs: numberValue(data, `servo${index}MaxPulseUs`, defaultServoHardware.defaultMaxPulseUs ?? 2400),
+          minAngleDeg: numberValue(data, `servo${index}MinAngleDeg`, defaultServoHardware.defaultMinAngleDeg ?? 0),
+          maxAngleDeg: numberValue(data, `servo${index}MaxAngleDeg`, defaultServoHardware.defaultMaxAngleDeg ?? 180),
+          centerAngleDeg: numberValue(data, `servo${index}CenterAngleDeg`, defaultServoHardware.defaultCenterAngleDeg ?? 90),
+          inverted: form.elements[`servo${index}Inverted`].checked
+        };
+        if (driver === 'ESP32_GPIO') {
+          servo.gpio = Number.isFinite(output) ? output : fallback.gpio;
+        } else {
+          servo.channel = Number.isFinite(output) ? output : fallback.channel;
+        }
+        return servo;
+      });
+    }
+
     function fillProjectForm(project = null) {
+      buildServoMappingFields();
       const form = document.getElementById('project-form');
       const body = project?.kinematics?.body || defaultBody;
       const links = project?.kinematics?.links || defaultLinks;
+      const servoHardware = project?.servoHardware || defaultServoHardware;
       const points = getProjectPoints(body);
       form.reset();
       form.elements.name.value = project?.name || 'Hexabot V3';
@@ -1235,6 +1491,7 @@
       form.elements.coxaLengthMm.value = links.coxaLengthMm ?? 75;
       form.elements.femurLengthMm.value = links.femurLengthMm ?? links.femurPrimaryLengthMm ?? 51;
       form.elements.tibiaLengthMm.value = links.tibiaLengthMm ?? 74.5;
+      setServoMappingFields(servoHardware.servos || defaultServoRows());
       updateShapeModeFields();
     }
 
@@ -1242,6 +1499,7 @@
       const data = new FormData(form);
       const now = new Date().toISOString();
       const name = String(data.get('name') || 'Hexabot Project').trim();
+      const servos = collectServoMapping(form);
       const points = defaultPoints.map((point) => ({
         leg: point.leg,
         label: point.label,
@@ -1274,6 +1532,15 @@
             femurPrimaryLengthMm: femurLengthMm,
             tibiaLengthMm: numberValue(data, 'tibiaLengthMm', 74.5)
           }
+        },
+        servoHardware: {
+          _comment: 'Hardware servo mapping mirrored from firmware. Firmware still owns real pulse output.',
+          defaultMinPulseUs: defaultServoHardware.defaultMinPulseUs ?? 500,
+          defaultMaxPulseUs: defaultServoHardware.defaultMaxPulseUs ?? 2400,
+          defaultMinAngleDeg: defaultServoHardware.defaultMinAngleDeg ?? 0,
+          defaultMaxAngleDeg: defaultServoHardware.defaultMaxAngleDeg ?? 180,
+          defaultCenterAngleDeg: defaultServoHardware.defaultCenterAngleDeg ?? 90,
+          servos
         },
         configFile: previousProject?.configFile,
         createdAt: previousProject?.createdAt || now,
@@ -1410,6 +1677,7 @@
       await loadRegistry();
       renderProjects();
       buildBodyPointFields();
+      buildServoMappingFields();
       document.getElementById('project-form').elements.shapeMode.addEventListener('change', updateShapeModeFields);
       document.getElementById('add-project-slot').addEventListener('click', () => openProjectModal());
       document.getElementById('project-form').addEventListener('submit', async (event) => {
