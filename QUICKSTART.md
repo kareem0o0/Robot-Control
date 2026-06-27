@@ -151,6 +151,7 @@ If you see this, everything is working! ðŸŽ‰
 | File | Purpose |
 |------|---------|
 | `main-dashboard.html` | Top-level project dashboard |
+| `hexapod-projects.html` | Hexapod-family project hub for current and future Hexabots |
 | `hexabot-modules.html` | Hexabot module launcher |
 | `hexabot-servo-controller.html` | Real-time servo controller |
 | `hexabot-config.json` | Source-of-truth robot parameters for geometry, gait defaults, and servo mapping |
@@ -384,7 +385,7 @@ netstat -an | grep 81                  # Check if port 81 open on ESP32
 
 ---
 
-**Start exploring now!** Open `main-dashboard.html` and enter the Hexabot module launcher. ðŸŽ®â¬¡
+**Start exploring now!** Open `main-dashboard.html` and enter the Hexapod projects hub. ðŸŽ®â¬¡
 
 *Version 2.0 | Stable | Production Ready*
 

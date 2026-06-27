@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
+  <title>Hexabot Projects Hub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-deep: #0a1219;
+      --bg-card: #101b24;
+      --bg-panel: #0e1a24;
+      --border: #1e2f3c;
+      --accent: #3ccf91;
+      --accent-glow: rgba(60, 207, 145, 0.3);
+      --text: #e3f0f5;
+      --muted: #7f95a8;
+      --info: #4fc3f7;
+      --warning: #f5a623;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: 0.2s ease;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 1.5rem;
+    }
+
+    .dashboard {
+      width: min(1300px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .mast {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: var(--bg-card);
+      padding: 1.2rem 2rem;
+      border-radius: 60px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.6);
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      font-size: 2.4rem;
+      color: var(--accent);
+      filter: drop-shadow(0 0 10px var(--accent-glow));
+    }
+
+    .logo-text {
+      font-size: 1.8rem;
+      font-weight: 750;
+      background: linear-gradient(135deg, #fff, #b0d9f5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .product-badge,
+    .status-badge,
+    .back-dashboard {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .product-badge {
+      background: #1a2c3b;
+      border: 1px solid #2e4b62;
+      color: #b6e2ff;
+      padding: 0.4rem 1.2rem;
+    }
+
+    .mast-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .back-dashboard {
+      background: #1b2f3c;
+      border: 1px solid #2a4457;
+      color: var(--text);
+      padding: 0.55rem 1.2rem;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .back-dashboard:hover {
+      background: #254a5e;
+      border-color: var(--accent);
+    }
+
+    .status-badge {
+      background: rgba(60, 207, 145, 0.15);
+      border: 1px solid rgba(60, 207, 145, 0.3);
+      color: #b0f0d0;
+      padding: 0.55rem 1.25rem;
+    }
+
+    .home-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 1.5rem;
+    }
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .hero-header,
+    .side-panel,
+    .project-card,
+    .project-placeholder {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .hero-header {
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 760;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #e0f0ff, #a0d0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .lead {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--bg-panel);
+      border: 1px solid #1e3140;
+      border-radius: var(--radius-sm);
+      padding: 1.15rem;
+      text-align: center;
+    }
+
+    .stat-card i {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+      font-size: 1.45rem;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-value {
+      color: #fff;
+      font-size: 1.6rem;
+      font-weight: 760;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.5rem 0 1rem;
+      color: #cbe5ff;
+      font-size: 1.3rem;
+      font-weight: 680;
+    }
+
+    .section-title i {
+      color: var(--accent);
+    }
+
+    .project-cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.2rem;
+    }
+
+    .project-card,
+    .project-placeholder {
+      min-height: 228px;
+      padding: 1.5rem;
+      color: inherit;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .project-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(60, 207, 145, 0.14);
+    }
+
+    .project-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
+      color: var(--muted);
+      border-style: dashed;
+      opacity: 0.82;
+    }
+
+    .project-placeholder i {
+      color: #3a5068;
+      font-size: 2rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .card-icon {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #122231;
+      border-radius: 14px;
+      color: var(--accent);
+      font-size: 2rem;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .card-sub {
+      color: var(--muted);
+      font-size: 0.86rem;
+      margin-top: 0.15rem;
+    }
+
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin: 0.9rem 0;
+    }
+
+    .feature-list div {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: #b0c8d9;
+      font-size: 0.86rem;
+    }
+
+    .feature-list i {
+      color: var(--accent);
+      font-size: 0.78rem;
+    }
+
+    .badge-active,
+    .badge-coming {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 20px;
+      padding: 0.35rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .badge-active {
+      background: rgba(60, 207, 145, 0.2);
+      color: #7ff0ba;
+    }
+
+    .badge-coming {
+      background: #1e2c38;
+      border: 1px solid #2e4050;
+      color: #7f95a8;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .side-panel {
+      padding: 1.3rem;
+    }
+
+    .side-panel h3 {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 1rem;
+      color: #c2ddf5;
+      font-size: 1rem;
+    }
+
+    .status-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .status-icon {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #3a4f62;
+    }
+
+    .status-icon.online {
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .status-name {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .status-val {
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      background: #1b2f3c;
+      border: 1px solid #2a4457;
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 1rem;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      margin-bottom: 0.55rem;
+    }
+
+    .btn:hover {
+      background: #254a5e;
+      border-color: var(--accent);
+    }
+
+    .tips-list {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.75;
+      list-style: none;
+    }
+
+    .footer {
+      color: #3a5068;
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .toast {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      z-index: 1000;
+      max-width: min(420px, calc(100vw - 3rem));
+      display: none;
+      gap: 0.8rem;
+      align-items: flex-start;
+      background: rgba(16, 27, 36, 0.96);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+      color: var(--text);
+      padding: 1rem 1.1rem;
+    }
+
+    .toast.show {
+      display: flex;
+    }
+
+    .toast i {
+      color: var(--accent);
+      margin-top: 0.1rem;
+    }
+
+    .toast-title {
+      font-weight: 750;
+      margin-bottom: 0.25rem;
+    }
+
+    .toast-message {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 860px) {
+      body {
+        padding: 1rem;
+      }
+
+      .mast {
+        align-items: flex-start;
+        border-radius: var(--radius);
+        flex-direction: column;
+      }
+
+      .mast-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .back-dashboard,
+      .status-badge {
+        justify-content: center;
+      }
+
+      .home-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid,
+      .project-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <header class="mast">
+      <a href="main-dashboard.html" class="logo-area">
+        <i class="fas fa-cubes logo-icon"></i>
+        <span class="logo-text">Hexapod Projects</span>
+        <span class="product-badge"><i class="fas fa-code-branch"></i> Robot Fleet</span>
+      </a>
+      <div class="mast-actions">
+        <a class="back-dashboard" href="main-dashboard.html">
+          <i class="fas fa-arrow-left"></i> Full Dashboard
+        </a>
+        <div class="status-badge">
+          <i class="fas fa-circle"></i> Workspace: Active
+        </div>
+      </div>
+    </header>
+
+    <div class="home-layout">
+      <main class="hero">
+        <section class="hero-header">
+          <h1>Hexabot Projects</h1>
+          <p class="lead">Intermediate hub for current and future Hexabot platforms. Pick a robot variant to open its module launcher.</p>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <i class="fas fa-robot"></i>
+              <div class="stat-label">Active Hexabots</div>
+              <div class="stat-value">1</div>
+            </div>
+            <div class="stat-card">
+              <i class="fas fa-microchip"></i>
+              <div class="stat-label">Controller</div>
+              <div class="stat-value">ESP32</div>
+            </div>
+            <div class="stat-card">
+              <i class="fas fa-wifi"></i>
+              <div class="stat-label">Protocol</div>
+              <div class="stat-value">WS</div>
+            </div>
+            <div class="stat-card">
+              <i class="fas fa-plug"></i>
+              <div class="stat-label">Endpoint</div>
+              <div class="stat-value">/ws</div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-title">
+            <i class="fas fa-rocket"></i> Hexabot Fleet
+          </div>
+
+          <div class="project-cards">
+            <a href="hexabot-modules.html" class="project-card">
+              <div class="card-header">
+                <div class="card-icon"><i class="fas fa-robot"></i></div>
+                <div>
+                  <div class="card-title">Hexabot V2</div>
+                  <div class="card-sub">6-leg hexapod robotics platform</div>
+                </div>
+              </div>
+              <div class="feature-list">
+                <div><i class="fas fa-check-circle"></i> Real-time servo control, 18 joints</div>
+                <div><i class="fas fa-check-circle"></i> Kinematic model and gait preview</div>
+                <div><i class="fas fa-check-circle"></i> Configurable robot geometry</div>
+              </div>
+              <span class="badge-active"><i class="fas fa-bolt"></i> ACTIVE</span>
+            </a>
+
+            <div class="project-placeholder">
+              <i class="fas fa-plus"></i>
+              <strong>Next Hexabot Slot</strong>
+              <span>Future robot variant or hardware revision</span>
+              <span class="badge-coming"><i class="fas fa-clock"></i> READY</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="sidebar">
+        <section class="side-panel">
+          <h3><i class="fas fa-heartbeat"></i> System Status</h3>
+          <div class="status-list">
+            <div class="status-item">
+              <div class="status-icon"></div>
+              <div>
+                <div class="status-name">WebSocket</div>
+                <div class="status-val">Connect from controller</div>
+              </div>
+            </div>
+            <div class="status-item">
+              <div class="status-icon"></div>
+              <div>
+                <div class="status-name">Hardware</div>
+                <div class="status-val">Unknown until connected</div>
+              </div>
+            </div>
+            <div class="status-item">
+              <div class="status-icon online"></div>
+              <div>
+                <div class="status-name">Config</div>
+                <div class="status-val">JSON + file bootstrap</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="side-panel">
+          <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+          <button class="btn" onclick="copyEndpoint()">
+            <i class="fas fa-copy"></i> Copy ESP32 Endpoint
+          </button>
+          <button class="btn" onclick="openServoControl()">
+            <i class="fas fa-sliders-h"></i> Open Servo Control
+          </button>
+          <button class="btn" onclick="openModules()">
+            <i class="fas fa-th-large"></i> Open Modules
+          </button>
+        </section>
+
+        <section class="side-panel">
+          <h3><i class="fas fa-lightbulb"></i> Tips</h3>
+          <ul class="tips-list">
+            <li>Use this page for multiple Hexabot variants.</li>
+            <li>Each card can point to its own module launcher.</li>
+            <li>Edit geometry in hexabot-config.json.</li>
+            <li>Run node sync-config.js after config edits.</li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+
+    <footer class="footer">
+      <i class="far fa-copyright"></i> Hexabot Control Suite - Fleet hub for Hexabot projects
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <i class="fas fa-info-circle"></i>
+    <div>
+      <div class="toast-title" id="toast-title">Notice</div>
+      <div class="toast-message" id="toast-message"></div>
+    </div>
+  </div>
+
+  <script>
+    let toastTimer = null;
+
+    function showMessage(title, message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-title').textContent = title;
+      document.getElementById('toast-message').textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 4200);
+    }
+
+    function copyEndpoint() {
+      const endpoint = 'ws://192.168.1.42/ws';
+      navigator.clipboard.writeText(endpoint).then(() => {
+        showMessage('ESP32 Endpoint', 'Copied ws://192.168.1.42/ws');
+      }).catch(() => {
+        showMessage('ESP32 Endpoint', endpoint);
+      });
+    }
+
+    function openServoControl() {
+      window.location.href = 'hexabot-servo-controller.html';
+    }
+
+    function openModules() {
+      window.location.href = 'hexabot-modules.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('Hexabot Projects Hub initialized.');
+    });
+  </script>
+</body>
+</html>
