@@ -6,7 +6,7 @@
 
 ```bash
 # Option A: Direct file access
-open /path/toprojects-hub.html
+open /path/to/main-dashboard.html
 
 # Option B: Serve locally (recommended)
 cd /path/to/hexabot
@@ -21,9 +21,9 @@ python3 -m http.server 8000
 
 ## First Interaction Test
 
-### 1. Hub Page
+### 1. Main Dashboard
 - See system status banner with live clock and uptime
-- View 3 project cards (Hexabot active, Project B offline, Project C empty)
+- View project slots and open the Hexapod Robot card
 - Try clicking the master power switch toggle
 
 ### 2. Hexabot Control Page
@@ -45,9 +45,9 @@ python3 -m http.server 8000
 
 ### If You Have an ESP32 Running Hexabot Firmware
 
-#### Step 1: Add WebSocket Integration to projects-hub.html
+#### Step 1: Add WebSocket Integration to hexabot-servo-controller.html
 
-Open `projects-hub.html` and find the closing `</script>` tag (near end). Before it, add:
+Open `hexabot-servo-controller.html` and find the closing `</script>` tag (near end). Before it, add:
 
 ```javascript
 // â”€â”€ WebSocket Integration â”€â”€
@@ -150,7 +150,9 @@ If you see this, everything is working! ðŸŽ‰
 
 | File | Purpose |
 |------|---------|
-| `projects-hub.html` | **Main dashboard** â€” Everything in one file (HTML+CSS+JS) |
+| `main-dashboard.html` | Top-level project dashboard |
+| `hexabot-modules.html` | Hexabot module launcher |
+| `hexabot-servo-controller.html` | Real-time servo controller |
 | `websocket-integration.js` | Optional WebSocket module (for advanced setups) |
 | `DASHBOARD_README.md` | Full technical documentation |
 | `QUICKSTART.md` | This file |
@@ -165,7 +167,7 @@ If you see this, everything is working! ðŸŽ‰
 
 If your ESP32 is on a different network:
 
-1. Open `projects-hub.html` in a text editor
+1. Open `hexabot-servo-controller.html` in a text editor
 2. Find the WebSocket connection line (or in console commands):
    ```javascript
    'ws://192.168.4.1:81'  // â† Change IP here
@@ -364,7 +366,7 @@ netstat -an | grep 81                  # Check if port 81 open on ESP32
 
 ---
 
-**Start exploring now!** Open `projects-hub.html` and enjoy the futuristic control room experience. ðŸŽ®â¬¡
+**Start exploring now!** Open `main-dashboard.html` and enter the Hexabot module launcher. ðŸŽ®â¬¡
 
 *Version 2.0 | Stable | Production Ready*
 

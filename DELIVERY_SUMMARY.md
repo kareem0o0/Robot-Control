@@ -2,7 +2,7 @@
 
 **Status**: âœ… **PRODUCTION READY**  
 **Deliverable**: Complete futuristic hexabot control dashboard  
-**Format**: Single HTML file (65 KB) + supporting documentation  
+**Format**: Multi-page HTML dashboard + supporting documentation  
 **Testing**: Fully interactive, live data simulation ready  
 
 ---
@@ -11,9 +11,9 @@
 
 ### Core Files
 
-**1. [`projects-hub.html`](.projects-hub.html)** (65 KB)
-   - Complete, standalone dashboard application
-   - Two-page SPA: Hub + Hexabot Control
+**1. [`main-dashboard.html`](./main-dashboard.html)**
+   - Top-level dashboard application
+   - Project slots for Hexabot and future robots
    - 100% vanilla JavaScript (zero dependencies)
    - Production-ready with live data simulation
    - **Ready to use immediately**: Open in any browser
@@ -55,10 +55,10 @@
 ### Option A: Direct File Access
 ```bash
 # Just open the file in your browser
-open /home/kemo/Arduino/hexabotprojects-hub.html
+open /home/kemo/Arduino/hexabot/main-dashboard.html
 
 # Or if you're on Linux:
-firefox /home/kemo/Arduino/hexabotprojects-hub.html
+firefox /home/kemo/Arduino/hexabot/main-dashboard.html
 ```
 
 ### Option B: Serve Locally (Recommended)
@@ -237,7 +237,7 @@ All documentation is in the same directory:
 ## ðŸš€ Next Steps
 
 ### Immediate (Today)
-1. Open `projects-hub.html` in your browser
+1. Open `main-dashboard.html` in your browser
 2. Test all interactive features using the checklist above
 3. Read QUICKSTART.md for detailed walkthrough
 4. Share on your team's screen/monitor (futuristic wow factor!)
@@ -310,7 +310,7 @@ console.timeEnd('test');  // Shows execution time
 ## ðŸŽ¨ Customization Examples
 
 ### Change Primary Color (Cyan â†’ Purple)
-Edit `projects-hub.html`, find the `:root` section:
+Edit the relevant dashboard HTML file and find the `:root` section:
 ```css
 --cyan: #00f0ff;        /* Change to #d97ef7 */
 --cyan-glow: rgba(0, 240, 255, 0.6);  /* Adjust RGBA */
@@ -340,7 +340,7 @@ setInterval(() => { /* chart update */ }, 2000);  // Change 2000 to desired ms
 ## ðŸ“ž Support & Troubleshooting
 
 ### Dashboard won't open
-- Verify file path: `/home/kemo/Arduino/hexabotprojects-hub.html`
+- Verify file path: `/home/kemo/Arduino/hexabot/main-dashboard.html`
 - Try serving locally: `python3 -m http.server 8000`
 - Check browser console for errors (F12)
 
@@ -384,7 +384,7 @@ You now have a **complete, professional-grade mission control dashboard** ready 
 âœ… Deployment on any web server  
 âœ… Future enhancement and scaling  
 
-**Start by opening `projects-hub.html` in your browser and enjoying the futuristic control experience!** ðŸš€
+**Start by opening `main-dashboard.html` in your browser and entering the Hexabot module launcher!** ðŸš€
 
 ---
 

@@ -4,7 +4,7 @@
    This file provides ready-to-use WebSocket client code for connecting
    the KEMO Control Center frontend to your ESP32 hexabot backend.
    
-   Usage: Include this as <script> tag in projects-hub.html or merge into
+   Usage: Include this as <script> tag in hexabot-servo-controller.html or merge into
    the main script section.
    ------------------------------------------------------------------- */
 

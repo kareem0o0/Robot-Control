@@ -82,7 +82,7 @@ KEMO Control Center v2.0 is a **PC-hosted, futuristic mission control dashboard*
 The dashboard uses a lightweight SPA pattern with two pages accessible via navigation:
 
 ```
-projects-hub.html (65 KB)
+main-dashboard.html
 â”œâ”€â”€ HTML Structure (15 KB)
 â”‚   â”œâ”€â”€ Topbar (brand, status, nav buttons)
 â”‚   â”œâ”€â”€ Hub Page
@@ -576,7 +576,7 @@ Template for adding new chart:
 
 ### 12.2 Production
 
-- [ ] Copy `projects-hub.html` to web server
+- [ ] Copy `main-dashboard.html`, `hexabot-modules.html`, and Hexabot module pages to web server
 - [ ] Configure ESP32 WebSocket server (if using)
 - [ ] Test WebSocket connection from dashboard
 - [ ] Verify telemetry updates in real-time

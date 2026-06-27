@@ -111,7 +111,9 @@ A **PC-hosted, production-ready mission control interface** designed for hexapod
 
 ```
 hexabot/
-â”œâ”€â”€ projects-hub.html                 # Complete dashboard (HTML+CSS+JS)
+â”œâ”€â”€ main-dashboard.html               # Top-level project dashboard
+â”œâ”€â”€ hexabot-modules.html              # Hexabot module launcher
+â”œâ”€â”€ hexabot-servo-controller.html     # Servo control interface
 â”œâ”€â”€ hexapod_UI.h              # Legacy ESP32 reference (do not modify)
 â”œâ”€â”€ hexabot.ino               # ESP32 firmware
 â””â”€â”€ README.md                 # This file
@@ -125,7 +127,7 @@ hexabot/
 
 ```bash
 # Simply open in browser
-open projects-hub.html
+open main-dashboard.html
 
 # Or serve via Python (recommended for full browser features)
 python3 -m http.server 8000
@@ -134,7 +136,7 @@ python3 -m http.server 8000
 
 ### 2. Deployment on Control Station
 
-1. Copy `projects-hub.html` to your control station web server
+1. Copy `main-dashboard.html`, `hexabot-modules.html`, and the Hexabot module pages to your control station web server
 2. Serve on port 8080 or configure your ESP32 to connect to this URL
 3. Configure WebSocket endpoint in JavaScript (see "Backend Integration" section)
 
