@@ -11,4 +11,4 @@ function wsConnect(url, onOpen, onMessage, onClose){
 
 function wsSend(obj){ if(!ws||ws.readyState!==WebSocket.OPEN) return false; ws.send(JSON.stringify(obj)); return true }
 
-function log(id,msg){ const el=document.getElementById(id); if(!el) return; const now=new Date().toLocaleTimeString(); el.innerHTML += `<div>[${now}] ${msg}</div>`; el.scrollTop = el.scrollHeight; }
+function log(id,msg){ const el=document.getElementById(id); if(!el) return; const now=new Date().toLocaleTimeString(); const div=document.createElement('div'); div.textContent=`[${now}] ${msg}`; el.appendChild(div); el.scrollTop = el.scrollHeight; }

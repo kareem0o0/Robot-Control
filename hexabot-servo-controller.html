@@ -1355,12 +1355,14 @@
     // ---------- LOGGING & TERMINAL ----------
     function log(type, msg) {
       const entry = `[${new Date().toLocaleTimeString()}] ${msg}`;
-      logDiv.innerHTML += entry + '<br>';
+      const logLine = document.createElement('div');
+      logLine.textContent = entry;
+      logDiv.appendChild(logLine);
       logDiv.scrollTop = logDiv.scrollHeight;
-      terminalDiv.innerHTML += entry + '\n';
+      terminalDiv.appendChild(document.createTextNode(entry + '\n'));
       terminalDiv.scrollTop = terminalDiv.scrollHeight;
-      if (terminalDiv.children.length > 15) {
-        // keep terminal clean
+      while (terminalDiv.childNodes.length > 200) {
+        terminalDiv.removeChild(terminalDiv.firstChild);
       }
     }
 
@@ -1722,7 +1724,7 @@
         const suppressSelectedLegStatus = performance.now() < legMover.suppressStatusUntilMs;
         data.servos.forEach((servo) => {
           const idx = Number(servo.idx);
-          if (!Number.isInteger(idx)) return;
+          if (!Number.isInteger(idx) || idx < 0 || idx >= NUM_SERVOS) return;
 
           const slider = document.getElementById('sl-' + idx);
           const angle = servo.target ?? servo.current;
@@ -1785,10 +1787,11 @@
           const jointDiv = document.createElement('div');
           jointDiv.className = 'joint';
           jointDiv.innerHTML = `
-            <label>${servoConfig?.name || JOINT_NAMES[j]}</label>
+            <label id="jlabel-${idx}"></label>
             <input id="sl-${idx}" type="range" min="0" max="180" value="${defaultAngle}" class="slider" oninput="window.onSlider(${idx}, this.value)">
             <span id="ang-${idx}" class="angle-badge">${defaultAngle} deg</span>
           `;
+          jointDiv.querySelector(`#jlabel-${idx}`).textContent = servoConfig?.name || JOINT_NAMES[j];
           container.appendChild(jointDiv);
         }
         legCard.appendChild(container);

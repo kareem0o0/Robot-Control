@@ -60,18 +60,7 @@
   }
 
   function loadRobotConfig() {
-    if (global.HexabotRobotConfig) return global.HexabotRobotConfig;
-    try {
-      const request = new XMLHttpRequest();
-      request.open('GET', 'hexabot-config.json', false);
-      request.send(null);
-      if ((request.status >= 200 && request.status < 300) || request.status === 0) {
-        return JSON.parse(request.responseText);
-      }
-    } catch (error) {
-      console.warn('Using built-in Hexabot config fallback:', error);
-    }
-    return FALLBACK_ROBOT_CONFIG;
+    return global.HexabotRobotConfig || FALLBACK_ROBOT_CONFIG;
   }
 
   function kinematicsFromRobotConfig(robotConfig) {

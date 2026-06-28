@@ -42,12 +42,15 @@ async function handleApi(req, res) {
   if (req.url !== '/api/hexapods') return false;
 
   if (req.method === 'GET') {
-    try {
-      const data = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
-      sendJson(res, 200, data);
-    } catch (error) {
+    fs.promises.readFile(registryPath, 'utf8').then((content) => {
+      try {
+        sendJson(res, 200, JSON.parse(content));
+      } catch (parseError) {
+        sendJson(res, 500, { error: parseError.message });
+      }
+    }).catch((error) => {
       sendJson(res, 500, { error: error.message });
-    }
+    });
     return true;
   }
 
